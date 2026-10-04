@@ -5,7 +5,7 @@ metadata:
   labels:
     app: product-service
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: product-service
@@ -16,7 +16,27 @@ spec:
     spec:
       containers:
         - name: product-service
-          image: product-service:latest
+          image: ghcr.io/g-vishnuvardhan/product-service:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8082
+              name: http
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8082
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8082
+            initialDelaySeconds: 20
+            periodSeconds: 5
