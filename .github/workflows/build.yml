@@ -21,8 +21,12 @@ jobs:
 
       - name: Build User Service
         working-directory: user-service
-        run: ./mvnw clean package -DskipTests
+        run: |
+          chmod +x ./mvnw
+          ./mvnw clean package -DskipTests
 
       - name: Build Product Service
         working-directory: product-service
-        run: ./mvnw clean package -DskipTests
+        run: |
+          chmod +x ./mvnw
+          ./mvnw clean package -DskipTests
