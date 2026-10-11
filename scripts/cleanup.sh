@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -e
 
-echo "Tearing down microservices-lab Kubernetes resources..."
-kubectl delete namespace microservices-lab --timeout=60s
-echo "Teardown complete. All pods, services, and volumes cleaned up."
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+
+echo "Tearing down microservices Kubernetes resources..."
+kubectl delete -f "$PROJECT_ROOT/k8s" --ignore-not-found
+echo "Teardown complete. All pods, services, and HPAs cleaned up."

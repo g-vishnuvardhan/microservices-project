@@ -1,10 +1,13 @@
 <#
 .SYNOPSIS
-    Teardown Script for CloudMart Microservices Lab
+    Teardown Script for Microservices Kubernetes Deployment
 #>
 
-Write-Host "Tearing down microservices-lab Kubernetes resources..." -ForegroundColor Yellow
+$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$projectRoot = Split-Path -Parent $scriptDir
 
-kubectl delete namespace microservices-lab --timeout=60s
+Write-Host "Tearing down microservices Kubernetes resources..." -ForegroundColor Yellow
 
-Write-Host "Teardown complete. All pods, services, and volumes cleaned up." -ForegroundColor Green
+kubectl delete -f "$projectRoot\k8s" --ignore-not-found
+
+Write-Host "Teardown complete. All pods, services, and HPAs cleaned up." -ForegroundColor Green

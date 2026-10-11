@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Terms and Conditions - Microservices Platform</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="legal-page">
+  <header class="navbar">
+    <div class="nav-container">
+      <div class="brand">
+        <a href="index.html" class="brand-link">
+          <svg class="brand-logo" viewBox="0 0 32 32" fill="none">
+            <rect width="32" height="32" rx="6" fill="#0f172a"/>
+            <rect x="1" y="1" width="30" height="30" rx="5" stroke="#334155" stroke-width="1"/>
+            <path d="M16 6L24 11V21L16 26L8 21V11L16 6Z" stroke="#38bdf8" stroke-width="1.75" stroke-linejoin="round"/>
+            <circle cx="16" cy="16" r="2.75" fill="#2563eb" stroke="#38bdf8" stroke-width="1.25"/>
+          </svg>
+          <div class="brand-text">
+            <span class="brand-title">Cloud-Native Microservices</span>
+            <span class="brand-meta">Engineering Platform</span>
+          </div>
+        </a>
+      </div>
+      <div class="nav-actions">
+        <a href="index.html" class="btn btn-secondary">Back to Dashboard</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container py-12">
+    <div class="content-box">
+      <div class="page-header">
+        <h1 class="page-title">Terms and Conditions of Use</h1>
+        <p class="page-subtitle">Effective Date: October 11, 2026 &bull; Version 2.0</p>
+      </div>
+
+      <div class="legal-body">
+        <section class="legal-section">
+          <h2>1. Acceptance of Terms</h2>
+          <p>By accessing the Cloud-Native Microservices Platform ("the Platform"), invoking its REST API endpoints, or deploying its orchestration manifests, you agree to comply with and be bound by these Terms and Conditions. If you do not agree to these terms, you should not access or use the services.</p>
+        </section>
+
+        <section class="legal-section">
+          <h2>2. Permitted Use and Academic Licensing</h2>
+          <p>The code, architecture templates, container images, and Kubernetes manifests within this project are distributed under the MIT Open Source License. You are granted permission to inspect, execute, modify, and integrate the code for educational, laboratory evaluation, research, and non-commercial distributed systems engineering purposes.</p>
+        </section>
+
+        <section class="legal-section">
+          <h2>3. Service Availability and Operational SLA</h2>
+          <p>The Platform provides an interactive evaluation console for testing distributed systems concepts including service discovery, Horizontal Pod Autoscaling (HPA), and container health probes. While designed for high availability using Kubernetes replica sets, the service is provided on an "as-is" and "as-available" basis without express warranties regarding uninterrupted continuous uptime.</p>
+        </section>
+
+        <section class="legal-section">
+          <h2>4. Acceptable Endpoint Usage</h2>
+          <p>When issuing requests against cluster endpoints (such as <code>/api/users</code>, <code>/api/products</code>, and Actuator probes), users agree not to:</p>
+          <ul>
+            <li>Execute denial-of-service (DoS) or distributed volumetric attacks exceeding standard stress-test parameters.</li>
+            <li>Attempt container escape vulnerabilities or bypass namespace isolation barriers.</li>
+            <li>Deploy unauthorized malicious binaries into the worker node cluster runtime.</li>
+          </ul>
+        </section>
+
+        <section class="legal-section">
+          <h2>5. Intellectual Property and Open Source Attributions</h2>
+          <p>All architectural diagrams, deployment automation scripts, and reference documentation are licensed under the repository's open-source terms. Third-party components, including Spring Boot, Nginx, Docker, and Kubernetes, remain the intellectual property of their respective foundation maintainers.</p>
+        </section>
+
+        <section class="legal-section">
+          <h2>6. Governing Law and Amendments</h2>
+          <p>These terms may be updated periodically to reflect architectural modifications or infrastructure enhancements. Changes will be published directly within the project documentation and repository history.</p>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-container">
+      <div class="footer-meta">
+        <span>&copy; 2026 Cloud-Native Microservices Platform. All rights reserved.</span>
+        <span>Infrastructure: Docker Engine &bull; Kubernetes &bull; Vercel Edge</span>
+      </div>
+      <div class="footer-links">
+        <a href="privacy.html" class="footer-link">Privacy Policy</a>
+        <a href="terms.html" class="footer-link active">Terms and Conditions</a>
+        <a href="https://github.com/g-vishnuvardhan/microservices-project" class="footer-link" target="_blank" rel="noopener">GitHub</a>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

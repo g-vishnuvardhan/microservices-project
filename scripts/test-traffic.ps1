@@ -2,7 +2,7 @@
 .SYNOPSIS
     Load Generator Script to Demonstrate Kubernetes Horizontal Pod Autoscaler (HPA)
 .DESCRIPTION
-    Simulates concurrent client requests against the CloudMart Frontend and Order APIs
+    Simulates concurrent client requests against the microservices cluster
     to drive CPU utilization and trigger automatic pod scale-out.
 #>
 
@@ -13,7 +13,7 @@ param(
 )
 
 Write-Host "==========================================================" -ForegroundColor Cyan
-Write-Host " CloudMart: HPA Load Generator & Stress Testing Tool" -ForegroundColor Green
+Write-Host " Microservices Cluster: HPA Load Generator" -ForegroundColor Green
 Write-Host "==========================================================" -ForegroundColor Cyan
 Write-Host "Target URL: $TargetUrl" -ForegroundColor Yellow
 Write-Host "Total Requests: $RequestsCount" -ForegroundColor Yellow
@@ -26,10 +26,11 @@ $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
 
 for ($i = 1; $i -le $RequestsCount; $i++) {
     try {
-        $resp = Invoke-RestMethod -Uri "$TargetUrl/api/proxy/products" -Method Get -TimeoutSec 2
+        $endpoint = if ($i % 2 -eq 0) { "$TargetUrl/api/users" } else { "$TargetUrl/api/products" }
+        $resp = Invoke-RestMethod -Uri $endpoint -Method Get -TimeoutSec 2
         $successCount++
         if ($i % 25 -eq 0) {
-            Write-Host "Sent $i / $RequestsCount requests... (Latest Pod: $($resp.hostname))" -ForegroundColor DarkCyan
+            Write-Host "Sent $i / $RequestsCount requests... (Target: $endpoint)" -ForegroundColor DarkCyan
         }
     } catch {
         $failCount++
@@ -43,5 +44,5 @@ Write-Host " Load Test Complete in $($stopwatch.Elapsed.TotalSeconds.ToString('F
 Write-Host " Successful Requests: $successCount" -ForegroundColor Cyan
 Write-Host " Failed Requests: $failCount" -ForegroundColor $(if ($failCount -gt 0) { "Red" } else { "DarkGray" })
 Write-Host "`nTo observe pod auto-scaling in action, run:" -ForegroundColor Yellow
-Write-Host "  kubectl get hpa -n microservices-lab -w" -ForegroundColor Magenta
-Write-Host "  kubectl get pods -n microservices-lab -w" -ForegroundColor Magenta
+Write-Host "  kubectl get hpa -w" -ForegroundColor Magenta
+Write-Host "  kubectl get pods -w" -ForegroundColor Magenta

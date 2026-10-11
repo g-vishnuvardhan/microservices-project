@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Policy - Microservices Platform</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="legal-page">
+  <header class="navbar">
+    <div class="nav-container">
+      <div class="brand">
+        <a href="index.html" class="brand-link">
+          <svg class="brand-logo" viewBox="0 0 32 32" fill="none">
+            <rect width="32" height="32" rx="6" fill="#0f172a"/>
+            <rect x="1" y="1" width="30" height="30" rx="5" stroke="#334155" stroke-width="1"/>
+            <path d="M16 6L24 11V21L16 26L8 21V11L16 6Z" stroke="#38bdf8" stroke-width="1.75" stroke-linejoin="round"/>
+            <circle cx="16" cy="16" r="2.75" fill="#2563eb" stroke="#38bdf8" stroke-width="1.25"/>
+          </svg>
+          <div class="brand-text">
+            <span class="brand-title">Cloud-Native Microservices</span>
+            <span class="brand-meta">Engineering Platform</span>
+          </div>
+        </a>
+      </div>
+      <div class="nav-actions">
+        <a href="index.html" class="btn btn-secondary">Back to Dashboard</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container py-12">
+    <div class="content-box">
+      <div class="page-header">
+        <h1 class="page-title">Privacy Policy</h1>
+        <p class="page-subtitle">Last updated: October 11, 2026 &bull; Production Compliance Version 1.2</p>
+      </div>
+
+      <div class="legal-body">
+        <section class="legal-section">
+          <h2>1. Overview and Scope</h2>
+          <p>This Privacy Policy outlines how the Cloud-Native Microservices Platform ("the Platform", "we", "our") handles system telemetry, diagnostic records, and runtime interaction data generated when users interact with our distributed microservices environment and associated endpoints.</p>
+        </section>
+
+        <section class="legal-section">
+          <h2>2. Data Collection and Diagnostic Logging</h2>
+          <p>The Platform collects strictly technical and operational telemetry to ensure high availability, automated load balancing, and container orchestration health. We collect:</p>
+          <ul>
+            <li><strong>Protocol Telemetry:</strong> HTTP request methods, targeted REST endpoints (such as <code>/api/users</code> and <code>/api/products</code>), response latency in milliseconds, and HTTP response codes.</li>
+            <li><strong>Cluster State Metadata:</strong> Serving pod identifiers, container IP addresses, node mappings, and Horizontal Pod Autoscaler utilization metrics.</li>
+            <li><strong>Local Diagnostics:</strong> Ephemeral browser session indicators used to preserve diagnostic mode selections (such as Live Cluster Mode versus Offline Evaluation Mode).</li>
+          </ul>
+        </section>
+
+        <section class="legal-section">
+          <h2>3. Purpose of Data Processing</h2>
+          <p>Data gathered via the Platform is processed exclusively for:</p>
+          <ul>
+            <li>Maintaining continuous service availability and verifying Kubernetes liveness/readiness probes.</li>
+            <li>Evaluating system performance, packet routing efficiency, and ingress proxy latency.</li>
+            <li>Demonstrating containerized service discovery and fault-tolerant architecture.</li>
+          </ul>
+          <p>We do not sell, rent, or monetize any diagnostic telemetry or user query records.</p>
+        </section>
+
+        <section class="legal-section">
+          <h2>4. Storage and Data Retention</h2>
+          <p>Request logs and diagnostic outputs generated in the interactive console are processed in memory and retained ephemerally for the duration of the operational session. Persistent database records are maintained on dedicated Kubernetes PersistentVolume storage within the cluster boundary.</p>
+        </section>
+
+        <section class="legal-section">
+          <h2>5. Security Controls</h2>
+          <p>Our infrastructure enforces container isolation using Linux kernel cgroups and namespaces, least-privilege non-root execution profiles (UID 10001), TLS termination at ingress, and declarative role-based access control (RBAC).</p>
+        </section>
+
+        <section class="legal-section">
+          <h2>6. Inquiries and Contact</h2>
+          <p>For questions regarding this policy or the operational infrastructure, please open an issue in the official <a href="https://github.com/g-vishnuvardhan/microservices-project" class="text-link" target="_blank" rel="noopener">GitHub Repository</a>.</p>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-container">
+      <div class="footer-meta">
+        <span>&copy; 2026 Cloud-Native Microservices Platform. All rights reserved.</span>
+        <span>Infrastructure: Docker Engine &bull; Kubernetes &bull; Vercel Edge</span>
+      </div>
+      <div class="footer-links">
+        <a href="privacy.html" class="footer-link active">Privacy Policy</a>
+        <a href="terms.html" class="footer-link">Terms and Conditions</a>
+        <a href="https://github.com/g-vishnuvardhan/microservices-project" class="footer-link" target="_blank" rel="noopener">GitHub</a>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

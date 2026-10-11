@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cloud-Native Microservices Platform</title>
+  <meta name="description" content="Production-grade distributed microservices platform with automated Docker containerization, Kubernetes cluster orchestration, and service discovery.">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Enterprise Navigation -->
+  <header class="navbar">
+    <div class="nav-container">
+      <div class="brand">
+        <a href="index.html" class="brand-link">
+          <svg class="brand-logo" viewBox="0 0 32 32" fill="none">
+            <rect width="32" height="32" rx="6" fill="#0f172a"/>
+            <rect x="1" y="1" width="30" height="30" rx="5" stroke="#334155" stroke-width="1"/>
+            <path d="M16 6L24 11V21L16 26L8 21V11L16 6Z" stroke="#38bdf8" stroke-width="1.75" stroke-linejoin="round"/>
+            <circle cx="16" cy="6" r="2.25" fill="#38bdf8"/>
+            <circle cx="24" cy="11" r="2.25" fill="#38bdf8"/>
+            <circle cx="24" cy="21" r="2.25" fill="#38bdf8"/>
+            <circle cx="16" cy="26" r="2.25" fill="#38bdf8"/>
+            <circle cx="8" cy="21" r="2.25" fill="#38bdf8"/>
+            <circle cx="8" cy="11" r="2.25" fill="#38bdf8"/>
+            <circle cx="16" cy="16" r="2.75" fill="#2563eb" stroke="#38bdf8" stroke-width="1.25"/>
+            <line x1="16" y1="8.25" x2="16" y2="13.25" stroke="#38bdf8" stroke-width="1.25"/>
+            <line x1="21.75" y1="12.25" x2="18.25" y2="14.5" stroke="#38bdf8" stroke-width="1.25"/>
+            <line x1="21.75" y1="19.75" x2="18.25" y2="17.5" stroke="#38bdf8" stroke-width="1.25"/>
+            <line x1="16" y1="23.75" x2="16" y2="18.75" stroke="#38bdf8" stroke-width="1.25"/>
+            <line x1="10.25" y1="19.75" x2="13.75" y2="17.5" stroke="#38bdf8" stroke-width="1.25"/>
+            <line x1="10.25" y1="12.25" x2="13.75" y2="14.5" stroke="#38bdf8" stroke-width="1.25"/>
+          </svg>
+          <div class="brand-text">
+            <span class="brand-title">Cloud-Native Microservices</span>
+            <span class="brand-meta">Infrastructure & Observability</span>
+          </div>
+        </a>
+      </div>
+
+      <div class="nav-actions">
+        <!-- Verified Custom Domain Badge -->
+        <span class="system-badge">
+          <span class="status-dot"></span>
+          <span>microservices-project-sooty.vercel.app</span>
+        </span>
+
+        <!-- Mode Toggle (Live vs Edge Preview) -->
+        <button id="modeToggleBtn" class="btn btn-secondary btn-sm" title="Toggle between live cluster queries and edge preview mode">
+          <span id="modeIndicator" class="status-dot"></span>
+          <span id="modeText">Live Cluster</span>
+        </button>
+
+        <!-- GitHub Repository Link -->
+        <a href="https://github.com/g-vishnuvardhan/microservices-project" class="btn btn-secondary btn-sm" target="_blank" rel="noopener">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+          </svg>
+          <span>Repository</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Clear & Purposeful Hero Header -->
+  <section class="hero-section">
+    <div class="container">
+      <div class="hero-header">
+        <h1 class="hero-title">Automated Microservices Orchestration Console</h1>
+        <p class="hero-desc">Declarative multi-service deployment across independent Spring Boot microservices, Nginx reverse proxy routing, and automated Kubernetes Horizontal Pod Autoscaling (HPA).</p>
+      </div>
+
+      <!-- Real Telemetry Grid -->
+      <div class="telemetry-grid">
+        <div class="telemetry-card">
+          <span class="telemetry-label">Cluster Runtime</span>
+          <span class="telemetry-value">Kubernetes v1.28+</span>
+          <span class="telemetry-sub">Docker Desktop / Kind / Minikube</span>
+        </div>
+
+        <div class="telemetry-card">
+          <span class="telemetry-label">Ingress Controller</span>
+          <span class="telemetry-value">NodePort: 30080</span>
+          <span class="telemetry-sub">Nginx Layer 7 Reverse Proxy</span>
+        </div>
+
+        <div class="telemetry-card">
+          <span class="telemetry-label">High Availability</span>
+          <span class="telemetry-value">2 Replicas / Svc</span>
+          <span class="telemetry-sub">HPA Dynamic Scale-Out Policy</span>
+        </div>
+
+        <div class="telemetry-card">
+          <span class="telemetry-label">Observability</span>
+          <span class="telemetry-value">Spring Actuator</span>
+          <span class="telemetry-sub">Liveness & Readiness HTTP Probes</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Interactive Console -->
+  <main class="console-section">
+    <div class="container">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">Interactive Request & Observability Engine</h2>
+          <p class="section-sub">Select a target endpoint to execute HTTP requests and inspect live protocol payloads and latency metrics.</p>
+        </div>
+      </div>
+
+      <!-- Endpoint Toolbar -->
+      <div class="toolbar">
+        <div class="endpoint-group">
+          <span class="toolbar-label">Target Service:</span>
+          <button class="tab-btn active" data-endpoint="users">Users API (/api/users)</button>
+          <button class="tab-btn" data-endpoint="products">Products API (/api/products)</button>
+          <button class="tab-btn" data-endpoint="health-users">User Health Probe</button>
+          <button class="tab-btn" data-endpoint="health-products">Product Health Probe</button>
+          <button class="tab-btn" data-endpoint="create-user">Create User (POST)</button>
+        </div>
+
+        <div>
+          <button id="executeBtn" class="btn btn-primary">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+            <span>Execute Request</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Dual Column Input vs Output Grid -->
+      <div class="io-grid">
+        <!-- Left: Input Specification -->
+        <div class="panel-card">
+          <div class="panel-header">
+            <span class="panel-title">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+              </svg>
+              <span>Input &bull; Request Specification</span>
+            </span>
+            <span id="inputMethod" class="method-badge method-get">GET</span>
+          </div>
+
+          <div class="panel-body">
+            <div class="meta-row">
+              <span class="meta-label">Target Endpoint</span>
+              <span id="inputUrl" class="meta-value">/api/users</span>
+            </div>
+
+            <div class="meta-row">
+              <span class="meta-label">Microservice Destination</span>
+              <span id="inputService" class="meta-value">user-service</span>
+            </div>
+
+            <div class="meta-row">
+              <span class="meta-label">Cluster Routing Port</span>
+              <span id="inputPort" class="meta-value">8081 (ClusterIP)</span>
+            </div>
+
+            <div>
+              <span class="meta-label" style="display:block; margin-bottom: 0.35rem;">HTTP Headers</span>
+              <div class="code-container">
+                <pre id="inputHeaders">Host: microservices.internal
+Accept: application/json</pre>
+              </div>
+            </div>
+
+            <div id="inputBodyContainer" style="display: none;">
+              <span class="meta-label" style="display:block; margin-bottom: 0.35rem;">Request Payload (JSON)</span>
+              <div class="code-container">
+                <pre id="inputBody">{}</pre>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Output & Telemetry -->
+        <div class="panel-card">
+          <div class="panel-header">
+            <span class="panel-title">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+              </svg>
+              <span>Output &bull; Service Response</span>
+            </span>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <span id="statusBadge" class="status-badge status-200">200 OK</span>
+              <span id="latencyBadge" class="latency-meter">12 ms</span>
+            </div>
+          </div>
+
+          <div class="panel-body">
+            <!-- Structured Entity Cards -->
+            <div>
+              <span class="meta-label" style="display:block; margin-bottom: 0.5rem;">Rendered Entity Records</span>
+              <div id="entitiesContainer" class="entity-list">
+                <!-- Dynamically rendered -->
+              </div>
+            </div>
+
+            <!-- Raw JSON Output -->
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                <span class="meta-label">Raw JSON Response</span>
+                <button id="copyJsonBtn" class="btn btn-secondary btn-sm" style="padding: 0.2rem 0.5rem;">Copy JSON</button>
+              </div>
+              <div class="code-container">
+                <pre id="rawJsonContainer">Loading response payload...</pre>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Architecture & Infrastructure Specifications -->
+  <section class="infra-section">
+    <div class="container">
+      <h2 class="section-title">Distributed System Topology & Component Specifications</h2>
+      <p class="section-sub">Standardized microservice decomposition following 12-factor cloud-native architectural patterns.</p>
+
+      <div class="infra-grid">
+        <div class="infra-card">
+          <h3>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+              <line x1="8" y1="21" x2="16" y2="21"></line>
+              <line x1="12" y1="17" x2="12" y2="21"></line>
+            </svg>
+            <span>Frontend & Ingress Tier</span>
+          </h3>
+          <p>Nginx 1.25 Alpine reverse proxy intercepting client traffic and resolving internal DNS targets.</p>
+          <ul class="infra-list">
+            <li>Port 80 (Internal) &bull; NodePort 30080 (External)</li>
+            <li>Path routing: <code>/api/users</code> & <code>/api/products</code></li>
+            <li>Multi-stage Docker packaging (~22 MB image)</li>
+          </ul>
+        </div>
+
+        <div class="infra-card">
+          <h3>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            <span>User Identity Microservice</span>
+          </h3>
+          <p>Spring Boot 3.4 REST service providing identity management, user lookup, and RBAC.</p>
+          <ul class="infra-list">
+            <li>Java 25 runtime with Eclipse Temurin base</li>
+            <li>Port 8081 &bull; 2 active pod replicas</li>
+            <li>Actuator health probes at <code>/actuator/health</code></li>
+          </ul>
+        </div>
+
+        <div class="infra-card">
+          <h3>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+            </svg>
+            <span>Product Catalog Microservice</span>
+          </h3>
+          <p>Spring Boot 3.4 REST service managing inventory items, prices, and stock reservation.</p>
+          <ul class="infra-list">
+            <li>Java 25 runtime with Maven multi-stage build</li>
+            <li>Port 8082 &bull; 2 active pod replicas</li>
+            <li>Zero-downtime rolling update deployment strategy</li>
+          </ul>
+        </div>
+
+        <div class="infra-card">
+          <h3>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+              <polyline points="17 6 23 6 23 12"></polyline>
+            </svg>
+            <span>Autoscaling & Resilience</span>
+          </h3>
+          <p>Horizontal Pod Autoscaler dynamically maintaining cluster stability under traffic load.</p>
+          <ul class="infra-list">
+            <li>Target CPU utilization threshold: 50%</li>
+            <li>Replica scaling boundaries: 2 to 5 pods</li>
+            <li>Automated self-healing on container crash</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Professional Footer -->
+  <footer class="footer">
+    <div class="footer-container">
+      <div class="footer-meta">
+        <span>&copy; 2026 Cloud-Native Microservices Platform. All rights reserved.</span>
+        <span>Infrastructure: Docker Engine &bull; Kubernetes &bull; Spring Boot &bull; Vercel Edge</span>
+      </div>
+
+      <div class="footer-links">
+        <a href="privacy.html" class="footer-link">Privacy Policy</a>
+        <a href="terms.html" class="footer-link">Terms and Conditions</a>
+        <a href="docs/LAB_MANUAL.md" class="footer-link">Lab Manual</a>
+        <a href="https://github.com/g-vishnuvardhan/microservices-project" class="footer-link" target="_blank" rel="noopener">GitHub</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
