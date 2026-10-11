@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: microservices-lab
+  labels:
+    environment: lab
+    project: cloudmart-microservices
+    managed-by: kubernetes

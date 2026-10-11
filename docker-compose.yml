@@ -1,0 +1,103 @@
+version: '3.8'
+
+services:
+  postgres-db:
+    image: postgres:16-alpine
+    container_name: cloudmart-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: cloudmart
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d cloudmart"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - cloudmart-net
+
+  product-service:
+    build:
+      context: ./services/product-service
+      dockerfile: Dockerfile
+    container_name: cloudmart-product
+    restart: unless-stopped
+    environment:
+      - PORT=5001
+      - APP_ENV=docker-compose
+    ports:
+      - "5001:5001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    networks:
+      - cloudmart-net
+
+  order-service:
+    build:
+      context: ./services/order-service
+      dockerfile: Dockerfile
+    container_name: cloudmart-order
+    restart: unless-stopped
+    environment:
+      - PORT=5002
+      - DB_HOST=postgres-db
+      - DB_PORT=5432
+      - DB_NAME=cloudmart
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres123
+      - PRODUCT_SERVICE_URL=http://product-service:5001
+      - APP_ENV=docker-compose
+    ports:
+      - "5002:5002"
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+      product-service:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5002/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    networks:
+      - cloudmart-net
+
+  frontend-service:
+    build:
+      context: ./services/frontend
+      dockerfile: Dockerfile
+    container_name: cloudmart-frontend
+    restart: unless-stopped
+    environment:
+      - PORT=5000
+      - PRODUCT_SERVICE_URL=http://product-service:5001
+      - ORDER_SERVICE_URL=http://order-service:5002
+      - APP_ENV=docker-compose
+    ports:
+      - "5000:5000"
+    depends_on:
+      - product-service
+      - order-service
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    networks:
+      - cloudmart-net
+
+networks:
+  cloudmart-net:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local

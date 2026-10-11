@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CloudMart - Microservices Lab Platform</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <style>
+    :root {
+      --bg-dark: #0f172a;
+      --card-bg: #1e293b;
+      --accent: #38bdf8;
+      --accent-hover: #0284c7;
+    }
+    body {
+      background-color: var(--bg-dark);
+      color: #e2e8f0;
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      min-height: 100vh;
+    }
+    .navbar {
+      background-color: #0b1120 !important;
+      border-bottom: 1px solid #334155;
+    }
+    .card {
+      background-color: var(--card-bg);
+      border: 1px solid #334155;
+      color: #e2e8f0;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+    }
+    .telemetry-bar {
+      background: linear-gradient(90deg, #1e293b 0%, #0f172a 100%);
+      border: 1px solid #334155;
+      border-radius: 10px;
+    }
+    .pod-badge {
+      font-family: monospace;
+      font-size: 0.85rem;
+      background: #0284c7;
+      color: #ffffff;
+      padding: 0.25rem 0.6rem;
+      border-radius: 4px;
+    }
+    .status-dot {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 6px;
+    }
+    .status-online { background-color: #10b981; box-shadow: 0 0 8px #10b981; }
+    .status-offline { background-color: #ef4444; box-shadow: 0 0 8px #ef4444; }
+    .nav-tabs .nav-link {
+      color: #94a3b8;
+      border: none;
+      padding: 0.75rem 1.25rem;
+    }
+    .nav-tabs .nav-link.active {
+      color: #38bdf8;
+      background: transparent;
+      border-bottom: 2px solid #38bdf8;
+      font-weight: 600;
+    }
+    .btn-primary {
+      background-color: var(--accent);
+      border-color: var(--accent);
+      color: #0f172a;
+      font-weight: 600;
+    }
+    .btn-primary:hover {
+      background-color: var(--accent-hover);
+      border-color: var(--accent-hover);
+      color: #ffffff;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navigation Bar -->
+  <nav class="navbar navbar-expand-lg navbar-dark px-3 py-2 sticky-top">
+    <div class="container-fluid">
+      <a class="navbar-brand d-flex align-items-center" href="#">
+        <i class="bi bi-boxes text-info fs-3 me-2"></i>
+        <div>
+          <span class="fw-bold tracking-tight">CloudMart</span>
+          <span class="badge bg-secondary ms-2" style="font-size: 0.7rem;">K8s Microservices Lab</span>
+        </div>
+      </a>
+      <div class="d-flex align-items-center">
+        <span class="badge bg-dark border border-secondary me-3">
+          <i class="bi bi-mortarboard-fill text-warning me-1"></i> Academic Project
+        </span>
+        <button class="btn btn-outline-info btn-sm position-relative" data-bs-toggle="modal" data-bs-target="#cartModal">
+          <i class="bi bi-cart3"></i> Cart
+          <span id="cartCount" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">0</span>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Container -->
+  <div class="container py-4">
+
+    <!-- Cluster Telemetry Banner -->
+    <div class="telemetry-bar p-3 mb-4 shadow-sm">
+      <div class="row align-items-center g-3 text-center text-md-start">
+        <div class="col-md-4">
+          <small class="text-secondary d-block text-uppercase fw-bold" style="font-size: 0.75rem;">Serving Frontend Pod</small>
+          <span class="pod-badge"><i class="bi bi-cpu me-1"></i>{{ pod_name }}</span>
+        </div>
+        <div class="col-md-4">
+          <small class="text-secondary d-block text-uppercase fw-bold" style="font-size: 0.75rem;">Cluster Environment</small>
+          <span class="text-info fw-semibold"><i class="bi bi-clouds me-1"></i>{{ app_env }}</span>
+        </div>
+        <div class="col-md-4 text-md-end">
+          <button class="btn btn-sm btn-outline-secondary" onclick="checkClusterTopology()">
+            <i class="bi bi-arrow-repeat me-1"></i> Refresh Pod Telemetry
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <ul class="nav nav-tabs mb-4 border-secondary" id="labTabs" role="tablist">
+      <li class="nav-item">
+        <button class="nav-link active" id="products-tab" data-bs-toggle="tab" data-bs-target="#products-pane" type="button">
+          <i class="bi bi-grid-fill me-1"></i> Products Catalog
+        </button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" id="orders-tab" data-bs-toggle="tab" data-bs-target="#orders-pane" type="button" onclick="loadOrders()">
+          <i class="bi bi-receipt me-1"></i> Order History (PostgreSQL)
+        </button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" id="topology-tab" data-bs-toggle="tab" data-bs-target="#topology-pane" type="button" onclick="checkClusterTopology()">
+          <i class="bi bi-diagram-3-fill me-1"></i> Cluster Topology & Probes
+        </button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" id="guide-tab" data-bs-toggle="tab" data-bs-target="#guide-pane" type="button">
+          <i class="bi bi-journal-text me-1"></i> Lab Experiment Reference
+        </button>
+      </li>
+    </ul>
+
+    <!-- Tab Contents -->
+    <div class="tab-content" id="labTabsContent">
+
+      <!-- Tab 1: Products Catalog -->
+      <div class="tab-pane fade show active" id="products-pane" role="tabpanel">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h4 class="mb-0 text-info"><i class="bi bi-shop me-2"></i>Available Hardware & Cloud Gear</h4>
+          <span id="productPodInfo" class="badge bg-secondary font-monospace">Fetching backend...</span>
+        </div>
+        <div class="row g-4" id="productsContainer">
+          <div class="col-12 text-center py-5">
+            <div class="spinner-border text-info" role="status"></div>
+            <p class="text-secondary mt-2">Connecting to Product Microservice...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 2: Orders History -->
+      <div class="tab-pane fade" id="orders-pane" role="tabpanel">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h4 class="mb-0 text-info"><i class="bi bi-database-check me-2"></i>Persistent Orders Registry</h4>
+          <div>
+            <button class="btn btn-sm btn-outline-info me-2" onclick="loadOrders()"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
+            <button class="btn btn-sm btn-outline-danger" onclick="clearOrders()"><i class="bi bi-trash"></i> Reset Orders</button>
+          </div>
+        </div>
+        <div class="card p-3 shadow">
+          <div class="table-responsive">
+            <table class="table table-dark table-hover mb-0">
+              <thead>
+                <tr class="text-secondary">
+                  <th>Order ID</th>
+                  <th>Customer</th>
+                  <th>Items Purchased</th>
+                  <th>Total Amount</th>
+                  <th>Handled by Pod</th>
+                  <th>Timestamp</th>
+                </tr>
+              </thead>
+              <tbody id="ordersTableBody">
+                <tr><td colspan="6" class="text-center py-4 text-secondary">Loading orders...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 3: Cluster Topology & Probes -->
+      <div class="tab-pane fade" id="topology-pane" role="tabpanel">
+        <h4 class="mb-3 text-info"><i class="bi bi-hdd-stack me-2"></i>Microservices Health & Cluster Topology</h4>
+        <div class="row g-3" id="topologyContainer">
+          <div class="col-md-4">
+            <div class="card p-3 h-100">
+              <div class="d-flex justify-content-between align-items-start mb-2">
+                <h5 class="card-title text-light"><i class="bi bi-browser-chrome me-2"></i>Frontend Service</h5>
+                <span class="badge bg-success">ONLINE</span>
+              </div>
+              <p class="text-secondary small mb-1">Serving Pod: <code class="text-info" id="topoFrontendPod">{{ pod_name }}</code></p>
+              <p class="text-secondary small mb-1">Port: <code>5000</code> (NodePort: <code>30080</code>)</p>
+              <p class="text-secondary small mb-0">Role: Web UI & API Reverse Proxy</p>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="card p-3 h-100">
+              <div class="d-flex justify-content-between align-items-start mb-2">
+                <h5 class="card-title text-light"><i class="bi bi-box-seam me-2"></i>Product Service</h5>
+                <span id="topoProductBadge" class="badge bg-secondary">CHECKING</span>
+              </div>
+              <p class="text-secondary small mb-1">Serving Pod: <code class="text-info" id="topoProductPod">-</code></p>
+              <p class="text-secondary small mb-1">Port: <code>5001</code> (ClusterIP)</p>
+              <p class="text-secondary small mb-0">Latency: <span id="topoProductLatency" class="text-warning">-</span></p>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="card p-3 h-100">
+              <div class="d-flex justify-content-between align-items-start mb-2">
+                <h5 class="card-title text-light"><i class="bi bi-receipt-cutoff me-2"></i>Order Service</h5>
+                <span id="topoOrderBadge" class="badge bg-secondary">CHECKING</span>
+              </div>
+              <p class="text-secondary small mb-1">Serving Pod: <code class="text-info" id="topoOrderPod">-</code></p>
+              <p class="text-secondary small mb-1">DB Connection: <span id="topoOrderDb" class="badge bg-info">-</span></p>
+              <p class="text-secondary small mb-0">Latency: <span id="topoOrderLatency" class="text-warning">-</span></p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 4: Lab Experiment Reference -->
+      <div class="tab-pane fade" id="guide-pane" role="tabpanel">
+        <div class="card p-4">
+          <h4 class="text-info mb-3"><i class="bi bi-journal-bookmark me-2"></i>Lab Viva Voce & Demonstration Cheatsheet</h4>
+          <div class="row g-4">
+            <div class="col-md-6">
+              <h6 class="text-light fw-bold"><i class="bi bi-terminal text-warning me-2"></i>Key Kubectl Commands:</h6>
+              <pre class="bg-black p-3 rounded text-info small"><code># Check all cluster objects
+kubectl get all -n microservices-lab
+
+# Check replicas & autoscaler
+kubectl get hpa -n microservices-lab
+
+# Demonstrate Self-Healing (Kill a pod):
+kubectl delete pod -l app=frontend-service -n microservices-lab
+kubectl get pods -n microservices-lab -w</code></pre>
+            </div>
+            <div class="col-md-6">
+              <h6 class="text-light fw-bold"><i class="bi bi-shield-check text-success me-2"></i>Lab Evaluation Points:</h6>
+              <ul class="text-secondary small mb-0">
+                <li><strong class="text-light">Loose Coupling:</strong> If Product Service is scaled or restarted, Order Service and UI remain functional.</li>
+                <li><strong class="text-light">Stateful Persistence:</strong> Orders are stored in PostgreSQL on a Kubernetes <code>PersistentVolumeClaim</code> (PVC).</li>
+                <li><strong class="text-light">Internal DNS:</strong> Services communicate using Kubernetes DNS names (<code>product-service:5001</code>).</li>
+                <li><strong class="text-light">Self-Healing:</strong> Kubernetes automatically replaces crashed pods according to the Deployment replica specification.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Cart Modal -->
+  <div class="modal fade" id="cartModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content bg-dark text-light border-secondary">
+        <div class="modal-header border-secondary">
+          <h5 class="modal-title"><i class="bi bi-cart-check me-2"></i>Checkout Cart</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div id="cartItemsList" class="mb-3">
+            <p class="text-secondary text-center py-3">Your cart is empty.</p>
+          </div>
+          <div class="d-flex justify-content-between fw-bold fs-5 border-top border-secondary pt-2">
+            <span>Total:</span>
+            <span id="cartTotal" class="text-info">$0.00</span>
+          </div>
+          <hr class="border-secondary">
+          <div class="mb-2">
+            <label class="form-label small text-secondary">Student / Customer Name</label>
+            <input type="text" id="customerName" class="form-control bg-secondary text-light border-0" value="Lab Examiner">
+          </div>
+          <div class="mb-2">
+            <label class="form-label small text-secondary">Email</label>
+            <input type="email" id="customerEmail" class="form-control bg-secondary text-light border-0" value="examiner@college.edu">
+          </div>
+        </div>
+        <div class="modal-footer border-secondary">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-primary" onclick="submitOrder()">Place Order (Test K8s)</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    let cart = [];
+    let productsList = [];
+
+    async function loadProducts() {
+      try {
+        const res = await fetch('/api/proxy/products');
+        const data = await res.json();
+        const container = document.getElementById('productsContainer');
+        
+        if (data.products && data.products.length > 0) {
+          productsList = data.products;
+          document.getElementById('productPodInfo').textContent = `Serving Pod: ${data.hostname || 'Unknown'}`;
+          
+          container.innerHTML = data.products.map(p => `
+            <div class="col-md-4">
+              <div class="card h-100 p-3 shadow-sm">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                  <span class="badge bg-secondary">${p.category}</span>
+                  <span class="badge bg-dark border border-secondary text-info"><i class="${p.icon} me-1"></i>Stock: ${p.stock}</span>
+                </div>
+                <h5 class="card-title text-light">${p.name}</h5>
+                <p class="card-text text-secondary small flex-grow-1">${p.description}</p>
+                <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top border-secondary">
+                  <span class="fs-5 fw-bold text-info">$${p.price.toFixed(2)}</span>
+                  <button class="btn btn-sm btn-primary" onclick="addToCart(${p.id})">
+                    <i class="bi bi-plus-circle me-1"></i> Add to Cart
+                  </button>
+                </div>
+              </div>
+            </div>
+          `).join('');
+        } else {
+          container.innerHTML = '<div class="col-12 text-center text-warning">No products available or Product Service is unreachable.</div>';
+        }
+      } catch (err) {
+        document.getElementById('productsContainer').innerHTML = `
+          <div class="col-12 alert alert-danger">
+            <strong>Error connecting to Product Microservice:</strong> ${err.message}
+          </div>
+        `;
+      }
+    }
+
+    function addToCart(productId) {
+      const prod = productsList.find(p => p.id === productId);
+      if (!prod) return;
+      const existing = cart.find(item => item.id === productId);
+      if (existing) {
+        existing.quantity += 1;
+      } else {
+        cart.push({ ...prod, quantity: 1 });
+      }
+      updateCartUI();
+    }
+
+    function updateCartUI() {
+      const count = cart.reduce((sum, item) => sum + item.quantity, 0);
+      document.getElementById('cartCount').textContent = count;
+      
+      const listEl = document.getElementById('cartItemsList');
+      if (cart.length === 0) {
+        listEl.innerHTML = '<p class="text-secondary text-center py-3">Your cart is empty.</p>';
+        document.getElementById('cartTotal').textContent = '$0.00';
+        return;
+      }
+
+      let total = 0;
+      listEl.innerHTML = cart.map(item => {
+        const itemTotal = item.price * item.quantity;
+        total += itemTotal;
+        return `
+          <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom border-secondary">
+            <div>
+              <div class="text-light fw-semibold">${item.name}</div>
+              <small class="text-secondary">$${item.price.toFixed(2)} x ${item.quantity}</small>
+            </div>
+            <div class="text-info fw-bold">$${itemTotal.toFixed(2)}</div>
+          </div>
+        `;
+      }).join('');
+      document.getElementById('cartTotal').textContent = `$${total.toFixed(2)}`;
+    }
+
+    async function submitOrder() {
+      if (cart.length === 0) {
+        alert('Cart is empty!');
+        return;
+      }
+      const customerName = document.getElementById('customerName').value;
+      const customerEmail = document.getElementById('customerEmail').value;
+
+      try {
+        const res = await fetch('/api/proxy/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            customer_name: customerName,
+            customer_email: customerEmail,
+            items: cart
+          })
+        });
+        const result = await res.json();
+        if (res.ok) {
+          alert(`Order #${result.order_id} placed successfully!\nProcessed by Pod: ${result.served_by_pod}\nStored in: ${result.storage}`);
+          cart = [];
+          updateCartUI();
+          bootstrap.Modal.getInstance(document.getElementById('cartModal')).hide();
+          loadProducts(); // refresh stock
+        } else {
+          alert(`Failed to place order: ${result.error || 'Server error'}`);
+        }
+      } catch (err) {
+        alert(`Error communicating with Order Service: ${err.message}`);
+      }
+    }
+
+    async function loadOrders() {
+      try {
+        const tbody = document.getElementById('ordersTableBody');
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-secondary">Fetching orders from PostgreSQL...</td></tr>';
+        const res = await fetch('/api/proxy/orders');
+        const data = await res.json();
+        
+        if (data.orders && data.orders.length > 0) {
+          tbody.innerHTML = data.orders.map(o => `
+            <tr>
+              <td><span class="badge bg-secondary font-monospace">#${o.id}</span></td>
+              <td><strong>${o.customer_name}</strong><br><small class="text-secondary">${o.customer_email}</small></td>
+              <td>${o.items ? o.items.map(i => `${i.name} (x${i.quantity})`).join(', ') : '-'}</td>
+              <td class="text-info fw-bold">$${parseFloat(o.total_amount).toFixed(2)}</td>
+              <td><span class="pod-badge">${o.served_by_pod || 'Unknown'}</span></td>
+              <td class="small text-secondary">${new Date(o.created_at).toLocaleString()}</td>
+            </tr>
+          `).join('');
+        } else {
+          tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-secondary">No orders recorded yet. Place an order to test!</td></tr>';
+        }
+      } catch (err) {
+        document.getElementById('ordersTableBody').innerHTML = `<tr><td colspan="6" class="text-danger text-center">Error fetching orders: ${err.message}</td></tr>`;
+      }
+    }
+
+    async function clearOrders() {
+      if (!confirm('Are you sure you want to clear all order history for this demo?')) return;
+      try {
+        await fetch('/api/proxy/orders', { method: 'DELETE' });
+        loadOrders();
+      } catch (e) {
+        alert('Could not clear orders.');
+      }
+    }
+
+    async function checkClusterTopology() {
+      try {
+        const res = await fetch('/api/cluster/status');
+        const data = await res.json();
+        
+        // Product
+        if (data.services.product && data.services.product.status === 'UP') {
+          document.getElementById('topoProductBadge').className = 'badge bg-success';
+          document.getElementById('topoProductBadge').textContent = 'ONLINE';
+          document.getElementById('topoProductPod').textContent = data.services.product.pod;
+          document.getElementById('topoProductLatency').textContent = `${data.services.product.latency_ms} ms`;
+        } else {
+          document.getElementById('topoProductBadge').className = 'badge bg-danger';
+          document.getElementById('topoProductBadge').textContent = 'OFFLINE';
+        }
+
+        // Order
+        if (data.services.order && data.services.order.status === 'UP') {
+          document.getElementById('topoOrderBadge').className = 'badge bg-success';
+          document.getElementById('topoOrderBadge').textContent = 'ONLINE';
+          document.getElementById('topoOrderPod').textContent = data.services.order.pod;
+          document.getElementById('topoOrderDb').textContent = data.services.order.database || 'Connected';
+          document.getElementById('topoOrderLatency').textContent = `${data.services.order.latency_ms} ms`;
+        } else {
+          document.getElementById('topoOrderBadge').className = 'badge bg-danger';
+          document.getElementById('topoOrderBadge').textContent = 'OFFLINE';
+        }
+      } catch (e) {
+        console.error('Topology check failed', e);
+      }
+    }
+
+    // Initial load
+    document.addEventListener('DOMContentLoaded', () => {
+      loadProducts();
+      checkClusterTopology();
+    });
+  </script>
+</body>
+</html>
