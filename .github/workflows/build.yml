@@ -81,6 +81,15 @@ jobs:
             ghcr.io/${{ env.OWNER_LC }}/product-service:latest
             ghcr.io/${{ env.OWNER_LC }}/product-service:${{ github.sha }}
 
+      - name: Build and Push Frontend Service Image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend-service
+          push: true
+          tags: |
+            ghcr.io/${{ env.OWNER_LC }}/frontend-service:latest
+            ghcr.io/${{ env.OWNER_LC }}/frontend-service:${{ github.sha }}
+
   deploy-and-verify:
     name: Deploy & Verify on Kubernetes
     runs-on: ubuntu-latest
@@ -117,6 +126,7 @@ jobs:
         run: |
           kubectl rollout status deployment/user-service --timeout=180s
           kubectl rollout status deployment/product-service --timeout=180s
+          kubectl rollout status deployment/frontend-service --timeout=180s
 
       - name: Inspect Cluster State
         run: |

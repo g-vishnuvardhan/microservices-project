@@ -18,6 +18,7 @@ cd ..
 Write-Host "`n[2/4] Building Docker images..." -ForegroundColor Yellow
 docker build -t ghcr.io/g-vishnuvardhan/user-service:latest ./user-service
 docker build -t ghcr.io/g-vishnuvardhan/product-service:latest ./product-service
+docker build -t ghcr.io/g-vishnuvardhan/frontend-service:latest ./frontend-service
 
 # 3. Apply Kubernetes Manifests
 Write-Host "`n[3/4] Deploying to Kubernetes cluster..." -ForegroundColor Yellow
@@ -27,7 +28,9 @@ kubectl apply -f k8s/
 Write-Host "`n[4/4] Verifying rollout status..." -ForegroundColor Yellow
 kubectl rollout status deployment/user-service --timeout=120s
 kubectl rollout status deployment/product-service --timeout=120s
+kubectl rollout status deployment/frontend-service --timeout=120s
 
 Write-Host "`n Deployment complete! Current Pods:" -ForegroundColor Green
-kubectl get pods -l 'app in (user-service, product-service)'
-kubectl get svc -l 'app in (user-service, product-service)'
+kubectl get pods -l 'app in (user-service, product-service, frontend-service)'
+kubectl get svc -l 'app in (user-service, product-service, frontend-service)'
+Write-Host "`n Access the Web Showcase Interface at: http://localhost:30080" -ForegroundColor Cyan

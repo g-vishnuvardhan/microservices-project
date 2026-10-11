@@ -19,6 +19,7 @@ cd ..
 echo -e "\n[2/4] Building Docker images..."
 docker build -t ghcr.io/g-vishnuvardhan/user-service:latest ./user-service
 docker build -t ghcr.io/g-vishnuvardhan/product-service:latest ./product-service
+docker build -t ghcr.io/g-vishnuvardhan/frontend-service:latest ./frontend-service
 
 # 3. Apply Kubernetes Manifests
 echo -e "\n[3/4] Deploying to Kubernetes cluster..."
@@ -28,7 +29,9 @@ kubectl apply -f k8s/
 echo -e "\n[4/4] Verifying rollout status..."
 kubectl rollout status deployment/user-service --timeout=120s
 kubectl rollout status deployment/product-service --timeout=120s
+kubectl rollout status deployment/frontend-service --timeout=120s
 
 echo -e "\nDeployment complete! Current Pods:"
-kubectl get pods -l 'app in (user-service, product-service)'
-kubectl get svc -l 'app in (user-service, product-service)'
+kubectl get pods -l 'app in (user-service, product-service, frontend-service)'
+kubectl get svc -l 'app in (user-service, product-service, frontend-service)'
+echo -e "\nAccess the Web Showcase Interface at: http://localhost:30080"
