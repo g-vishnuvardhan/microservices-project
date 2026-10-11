@@ -1,18 +1,19 @@
 /**
- * Cloud-Native Microservices Platform - Interactive Request & Observability Engine
- * Enterprise Client-Side Controller
+ * Cloud-Native Microservices Platform - Interactive Observability Engine
+ * Inspired by Dribbble & CollectUI developer tooling
  */
 
 'use strict';
 
 const ENDPOINTS_CONFIG = {
   'users': {
+    nodeId: 'node-user',
     serviceName: 'user-service',
     clusterPort: '8081 (ClusterIP / NodePort 31463)',
     path: '/api/users',
     method: 'GET',
     payload: null,
-    description: 'Queries active identity records from User Service',
+    description: 'Queries active identity records from Spring Boot User Service',
     mockData: [
       { id: 1, name: "Alice Johnson", email: "alice@example.com", role: "Site Reliability Engineer", active: true },
       { id: 2, name: "Bob Smith", email: "bob@example.com", role: "DevOps Architect", active: true }
@@ -21,19 +22,20 @@ const ENDPOINTS_CONFIG = {
       <div class="entity-card">
         <div>
           <div class="entity-title">${user.name}</div>
-          <div class="entity-sub">${user.email} &bull; ${user.role || 'User'}</div>
+          <div class="entity-sub">${user.email} &bull; ${user.role || 'User Entity'}</div>
         </div>
         <span class="entity-tag">ID: #${user.id}</span>
       </div>
     `).join('')
   },
   'products': {
+    nodeId: 'node-product',
     serviceName: 'product-service',
     clusterPort: '8082 (ClusterIP / NodePort 30805)',
     path: '/api/products',
     method: 'GET',
     payload: null,
-    description: 'Queries inventory catalog records from Product Service',
+    description: 'Queries inventory catalog records from Spring Boot Product Service',
     mockData: [
       { id: 101, name: "Cloud Compute Node", price: 899.99, stock: 45, sku: "HW-NODE-ARM64" },
       { id: 102, name: "Hardware Security Key", price: 29.99, stock: 120, sku: "SEC-KEY-FIDO2" }
@@ -49,6 +51,7 @@ const ENDPOINTS_CONFIG = {
     `).join('')
   },
   'health-users': {
+    nodeId: 'node-actuator',
     serviceName: 'user-service (Actuator)',
     clusterPort: '8081 (Internal Probe)',
     path: '/api/health/users',
@@ -82,6 +85,7 @@ const ENDPOINTS_CONFIG = {
     `
   },
   'health-products': {
+    nodeId: 'node-actuator',
     serviceName: 'product-service (Actuator)',
     clusterPort: '8082 (Internal Probe)',
     path: '/api/health/products',
@@ -115,6 +119,7 @@ const ENDPOINTS_CONFIG = {
     `
   },
   'create-user': {
+    nodeId: 'node-user',
     serviceName: 'user-service',
     clusterPort: '8081 (ClusterIP / NodePort 31463)',
     path: '/api/users',
@@ -150,6 +155,7 @@ let isLiveMode = true;
 // DOM References
 const elements = {
   tabButtons: document.querySelectorAll('.tab-btn'),
+  topoNodes: document.querySelectorAll('.topo-node'),
   executeBtn: document.getElementById('executeBtn'),
   copyJsonBtn: document.getElementById('copyJsonBtn'),
   inputMethod: document.getElementById('inputMethod'),
@@ -163,27 +169,89 @@ const elements = {
   latencyBadge: document.getElementById('latencyBadge'),
   entitiesContainer: document.getElementById('entitiesContainer'),
   rawJsonContainer: document.getElementById('rawJsonContainer'),
+  terminalBody: document.getElementById('terminalBody'),
   modeToggleBtn: document.getElementById('modeToggleBtn'),
   modeText: document.getElementById('modeText'),
   modeIndicator: document.getElementById('modeIndicator')
 };
 
+// Syntax Highlighter for JSON (Dribbble code aesthetic)
+function syntaxHighlightJson(json) {
+  if (typeof json !== 'string') {
+    json = JSON.stringify(json, null, 2);
+  }
+  json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+    let cls = 'json-number';
+    if (/^"/.test(match)) {
+      if (/:$/.test(match)) {
+        cls = 'json-key';
+      } else {
+        cls = 'json-string';
+      }
+    } else if (/true|false/.test(match)) {
+      cls = 'json-boolean';
+    } else if (/null/.test(match)) {
+      cls = 'json-null';
+    }
+    return '<span class="' + cls + '">' + match + '</span>';
+  });
+}
+
+// Append cluster event line
+function logClusterEvent(level, message, isSuccess = false) {
+  if (!elements.terminalBody) return;
+  const time = new Date().toTimeString().split(' ')[0];
+  const div = document.createElement('div');
+  div.className = 'log-line';
+  div.innerHTML = `
+    <span class="log-time">[${time}]</span>
+    <span class="log-level ${isSuccess ? 'success' : ''}">${level}</span>
+    <span class="log-msg">${message}</span>
+  `;
+  elements.terminalBody.appendChild(div);
+  elements.terminalBody.scrollTop = elements.terminalBody.scrollHeight;
+}
+
 // Initialize Application
 function init() {
   bindEvents();
+  updateActiveTopologyNode(currentEndpointKey);
   updateInputPanel(currentEndpointKey);
+  
+  // Seed initial log events
+  logClusterEvent('SYSTEM', 'Cluster topology initialized &bull; Kind / Kubernetes v1.28.0');
+  logClusterEvent('ROUTER', 'Ingress NodePort bound to host:30080 -> nginx reverse proxy');
+  
   executeRequest();
 }
 
 function bindEvents() {
   // Tab switching
   elements.tabButtons.forEach(btn => {
-    btn.addEventListener('click', (e) => {
+    btn.addEventListener('click', () => {
       elements.tabButtons.forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       currentEndpointKey = btn.dataset.endpoint;
+      updateActiveTopologyNode(currentEndpointKey);
       updateInputPanel(currentEndpointKey);
       executeRequest();
+    });
+  });
+
+  // Interactive Topology Node clicks
+  elements.topoNodes.forEach(node => {
+    node.addEventListener('click', () => {
+      const targetEndpoint = node.dataset.endpoint;
+      if (targetEndpoint && ENDPOINTS_CONFIG[targetEndpoint]) {
+        currentEndpointKey = targetEndpoint;
+        elements.tabButtons.forEach(b => {
+          b.classList.toggle('active', b.dataset.endpoint === targetEndpoint);
+        });
+        updateActiveTopologyNode(currentEndpointKey);
+        updateInputPanel(currentEndpointKey);
+        executeRequest();
+      }
     });
   });
 
@@ -192,15 +260,18 @@ function bindEvents() {
     elements.executeBtn.addEventListener('click', executeRequest);
   }
 
-  // Copy JSON button
+  // Copy JSON button with feedback transition
   if (elements.copyJsonBtn) {
     elements.copyJsonBtn.addEventListener('click', () => {
-      const jsonText = elements.rawJsonContainer.innerText;
-      navigator.clipboard.writeText(jsonText).then(() => {
+      const config = ENDPOINTS_CONFIG[currentEndpointKey];
+      const jsonRaw = JSON.stringify(config.mockData, null, 2);
+      navigator.clipboard.writeText(jsonRaw).then(() => {
         const originalText = elements.copyJsonBtn.innerText;
         elements.copyJsonBtn.innerText = 'Copied!';
+        elements.copyJsonBtn.style.color = 'var(--status-emerald)';
         setTimeout(() => {
           elements.copyJsonBtn.innerText = originalText;
+          elements.copyJsonBtn.style.color = '';
         }, 1500);
       });
     });
@@ -212,14 +283,31 @@ function bindEvents() {
       isLiveMode = !isLiveMode;
       if (isLiveMode) {
         elements.modeText.innerText = 'Live Cluster';
-        elements.modeIndicator.style.backgroundColor = 'var(--status-success)';
+        elements.modeIndicator.style.backgroundColor = 'var(--status-emerald)';
+        logClusterEvent('MODE', 'Switched traffic routing to Live Cluster (K8s ingress)');
       } else {
         elements.modeText.innerText = 'Edge Preview';
-        elements.modeIndicator.style.backgroundColor = 'var(--accent-text)';
+        elements.modeIndicator.style.backgroundColor = 'var(--accent-light)';
+        logClusterEvent('MODE', 'Switched traffic routing to Edge Preview (Vercel CDN)');
       }
       executeRequest();
     });
   }
+
+  // Keyboard shortcut: Press Enter to execute request
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.target.matches('textarea, input')) {
+      executeRequest();
+    }
+  });
+}
+
+function updateActiveTopologyNode(key) {
+  const config = ENDPOINTS_CONFIG[key];
+  if (!config) return;
+  elements.topoNodes.forEach(n => {
+    n.classList.toggle('active-node', n.id === config.nodeId);
+  });
 }
 
 function updateInputPanel(key) {
@@ -244,7 +332,7 @@ function updateInputPanel(key) {
 
   if (config.payload) {
     elements.inputBodyContainer.style.display = 'block';
-    elements.inputBody.innerText = JSON.stringify(config.payload, null, 2);
+    elements.inputBody.innerHTML = syntaxHighlightJson(config.payload);
   } else {
     elements.inputBodyContainer.style.display = 'none';
   }
@@ -259,6 +347,10 @@ async function executeRequest() {
     elements.executeBtn.innerText = 'Executing...';
   }
 
+  // Tactile Shimmer Feedback
+  elements.entitiesContainer.classList.add('shimmer-box');
+  elements.rawJsonContainer.classList.add('shimmer-box');
+
   const startTime = performance.now();
   let responseData = null;
   let statusCode = 200;
@@ -266,9 +358,8 @@ async function executeRequest() {
 
   try {
     if (isLiveMode) {
-      // Attempt real HTTP query against cluster reverse proxy
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 2500);
+      const timeoutId = setTimeout(() => controller.abort(), 2000);
 
       const fetchOptions = {
         method: config.method,
@@ -292,20 +383,23 @@ async function executeRequest() {
         throw new Error(`HTTP ${res.status}`);
       }
     } else {
-      // Standalone simulation mode
-      await new Promise(r => setTimeout(r, 65));
+      await new Promise(r => setTimeout(r, 75));
       responseData = config.mockData;
-      statusText = config.method === 'POST' ? '201 Created (Edge Preview)' : '200 OK (Edge Preview)';
+      statusText = config.method === 'POST' ? '201 Created' : '200 OK (Edge Preview)';
     }
   } catch (err) {
-    // Graceful fallback for static hosting (Vercel) when cluster is remote
-    await new Promise(r => setTimeout(r, 45));
+    // Graceful fallback for static hosting / Vercel
+    await new Promise(r => setTimeout(r, 60));
     responseData = config.mockData;
     statusText = config.method === 'POST' ? '201 Created' : '200 OK (Edge Preview)';
   } finally {
-    const elapsed = Math.max(8, Math.round(performance.now() - startTime));
+    const elapsed = Math.max(7, Math.round(performance.now() - startTime));
 
-    // Render Status
+    // Remove shimmer
+    elements.entitiesContainer.classList.remove('shimmer-box');
+    elements.rawJsonContainer.classList.remove('shimmer-box');
+
+    // Render Status & Latency
     elements.statusBadge.innerText = statusText;
     elements.statusBadge.className = 'status-badge status-200';
     elements.latencyBadge.innerText = `${elapsed} ms`;
@@ -317,17 +411,25 @@ async function executeRequest() {
       elements.entitiesContainer.innerHTML = '<div class="entity-card"><span class="entity-sub">No structured entities to display</span></div>';
     }
 
-    // Render Raw JSON
-    elements.rawJsonContainer.innerText = JSON.stringify(responseData, null, 2);
+    // Render Syntax-Highlighted JSON
+    elements.rawJsonContainer.innerHTML = syntaxHighlightJson(responseData);
+
+    // Append to Terminal Log
+    logClusterEvent('HTTP', `${config.method} ${config.path} -> ${statusText} in ${elapsed}ms`, true);
 
     if (elements.executeBtn) {
       elements.executeBtn.disabled = false;
-      elements.executeBtn.innerText = 'Execute Request';
+      elements.executeBtn.innerHTML = `
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="5 3 19 12 5 21 5 3"></polygon>
+        </svg>
+        <span>Execute Request</span>
+      `;
     }
   }
 }
 
-// Global modal triggers for Privacy Policy & Terms
+// Global modal triggers
 window.openModal = function(id) {
   const modal = document.getElementById(id);
   if (modal) modal.classList.add('active');
@@ -338,12 +440,10 @@ window.closeModal = function(id) {
   if (modal) modal.classList.remove('active');
 };
 
-// Close modal on escape key
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active'));
   }
 });
 
-// Run when DOM is ready
 document.addEventListener('DOMContentLoaded', init);

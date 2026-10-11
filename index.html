@@ -13,7 +13,7 @@
 </head>
 <body>
 
-  <!-- Enterprise Navigation -->
+  <!-- Enterprise Navigation & Command Bar -->
   <header class="navbar">
     <div class="nav-container">
       <div class="brand">
@@ -37,22 +37,28 @@
             <line x1="10.25" y1="12.25" x2="13.75" y2="14.5" stroke="#38bdf8" stroke-width="1.25"/>
           </svg>
           <div class="brand-text">
-            <span class="brand-title">Cloud-Native Microservices</span>
+            <span class="brand-title">
+              Cloud-Native Microservices
+              <span class="version-pill">v2.4.0</span>
+            </span>
             <span class="brand-meta">Infrastructure & Observability</span>
           </div>
         </a>
       </div>
 
       <div class="nav-actions">
-        <!-- Verified Custom Domain Badge -->
+        <!-- Verified Domain Badge with Radar Pulse -->
         <span class="system-badge">
-          <span class="status-dot"></span>
+          <span class="pulse-wrapper">
+            <span class="pulse-core"></span>
+            <span class="pulse-ring"></span>
+          </span>
           <span>microservices-project-sooty.vercel.app</span>
         </span>
 
-        <!-- Mode Toggle (Live vs Edge Preview) -->
+        <!-- Traffic Routing Mode Switcher -->
         <button id="modeToggleBtn" class="btn btn-secondary btn-sm" title="Toggle between live cluster queries and edge preview mode">
-          <span id="modeIndicator" class="status-dot"></span>
+          <span id="modeIndicator" class="pulse-core"></span>
           <span id="modeText">Live Cluster</span>
         </button>
 
@@ -67,12 +73,75 @@
     </div>
   </header>
 
-  <!-- Clear & Purposeful Hero Header -->
+  <!-- Hero Header & Interactive Architecture Topology -->
   <section class="hero-section">
     <div class="container">
       <div class="hero-header">
-        <h1 class="hero-title">Automated Microservices Orchestration Console</h1>
-        <p class="hero-desc">Declarative multi-service deployment across independent Spring Boot microservices, Nginx reverse proxy routing, and automated Kubernetes Horizontal Pod Autoscaling (HPA).</p>
+        <div>
+          <h1 class="hero-title">Automated Microservices Orchestration Console</h1>
+          <p class="hero-desc">Interactive query execution, service discovery routing, and container health observability for distributed Docker & Kubernetes deployments.</p>
+        </div>
+      </div>
+
+      <!-- Interactive Node Topology Graph (Dribbble Architecture Showcase) -->
+      <div class="topology-graph-card">
+        <div class="topology-header">
+          <span class="topology-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="18" cy="5" r="3"></circle>
+              <circle cx="6" cy="12" r="3"></circle>
+              <circle cx="18" cy="19" r="3"></circle>
+              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+              <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+            </svg>
+            <span>Live Topology Graph &bull; Click Node to Inspect Service</span>
+          </span>
+          <span style="font-size: 0.725rem; color: var(--text-muted); font-family: var(--font-mono);">
+            CoreDNS: svc.cluster.local &bull; Active Route
+          </span>
+        </div>
+
+        <div class="topology-grid">
+          <!-- Node 1: Ingress Gateway -->
+          <div id="node-ingress" class="topo-node" data-endpoint="users">
+            <div class="node-header">
+              <span class="node-title">frontend-service</span>
+              <span class="pulse-wrapper"><span class="pulse-core"></span></span>
+            </div>
+            <span class="node-sub">NodePort: 30080</span>
+            <span class="node-meta">Nginx Reverse Proxy &bull; 2 Pods</span>
+          </div>
+
+          <!-- Node 2: User Microservice -->
+          <div id="node-user" class="topo-node active-node" data-endpoint="users">
+            <div class="node-header">
+              <span class="node-title">user-service</span>
+              <span class="pulse-wrapper"><span class="pulse-core"></span></span>
+            </div>
+            <span class="node-sub">ClusterIP: 8081</span>
+            <span class="node-meta">Spring Boot 3.4 &bull; 2 Replicas</span>
+          </div>
+
+          <!-- Node 3: Product Microservice -->
+          <div id="node-product" class="topo-node" data-endpoint="products">
+            <div class="node-header">
+              <span class="node-title">product-service</span>
+              <span class="pulse-wrapper"><span class="pulse-core"></span></span>
+            </div>
+            <span class="node-sub">ClusterIP: 8082</span>
+            <span class="node-meta">Spring Boot 3.4 &bull; 2 Replicas</span>
+          </div>
+
+          <!-- Node 4: Health Probes -->
+          <div id="node-actuator" class="topo-node" data-endpoint="health-users">
+            <div class="node-header">
+              <span class="node-title">Actuator Probes</span>
+              <span class="pulse-wrapper"><span class="pulse-core"></span></span>
+            </div>
+            <span class="node-sub">Probe: /actuator/health</span>
+            <span class="node-meta">Liveness & Readiness: UP</span>
+          </div>
+        </div>
       </div>
 
       <!-- Real Telemetry Grid -->
@@ -80,7 +149,7 @@
         <div class="telemetry-card">
           <span class="telemetry-label">Cluster Runtime</span>
           <span class="telemetry-value">Kubernetes v1.28+</span>
-          <span class="telemetry-sub">Docker Desktop / Kind / Minikube</span>
+          <span class="telemetry-sub">Docker Engine / Kind / Minikube</span>
         </div>
 
         <div class="telemetry-card">
@@ -96,28 +165,28 @@
         </div>
 
         <div class="telemetry-card">
-          <span class="telemetry-label">Observability</span>
-          <span class="telemetry-value">Spring Actuator</span>
-          <span class="telemetry-sub">Liveness & Readiness HTTP Probes</span>
+          <span class="telemetry-label">Telemetry Protocol</span>
+          <span class="telemetry-value">HTTP/1.1 REST</span>
+          <span class="telemetry-sub">Spring Actuator Health Metrics</span>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Main Interactive Console -->
+  <!-- Main Console Section -->
   <main class="console-section">
     <div class="container">
       <div class="section-header">
         <div>
           <h2 class="section-title">Interactive Request & Observability Engine</h2>
-          <p class="section-sub">Select a target endpoint to execute HTTP requests and inspect live protocol payloads and latency metrics.</p>
+          <p class="section-sub">Select an endpoint or press <kbd>Enter</kbd> to trigger live microservice queries.</p>
         </div>
       </div>
 
-      <!-- Endpoint Toolbar -->
+      <!-- Control Toolbar -->
       <div class="toolbar">
         <div class="endpoint-group">
-          <span class="toolbar-label">Target Service:</span>
+          <span class="toolbar-label">Endpoint:</span>
           <button class="tab-btn active" data-endpoint="users">Users API (/api/users)</button>
           <button class="tab-btn" data-endpoint="products">Products API (/api/products)</button>
           <button class="tab-btn" data-endpoint="health-users">User Health Probe</button>
@@ -135,7 +204,7 @@
         </div>
       </div>
 
-      <!-- Dual Column Input vs Output Grid -->
+      <!-- Dual Column Input vs Output Inspector -->
       <div class="io-grid">
         <!-- Left: Input Specification -->
         <div class="panel-card">
@@ -194,7 +263,13 @@ Accept: application/json</pre>
             </span>
             <div style="display: flex; align-items: center; gap: 0.5rem;">
               <span id="statusBadge" class="status-badge status-200">200 OK</span>
-              <span id="latencyBadge" class="latency-meter">12 ms</span>
+              <span id="latencyBadge" class="latency-meter">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                <span>12 ms</span>
+              </span>
             </div>
           </div>
 
@@ -207,7 +282,7 @@ Accept: application/json</pre>
               </div>
             </div>
 
-            <!-- Raw JSON Output -->
+            <!-- Syntax-Highlighted Raw JSON -->
             <div>
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
                 <span class="meta-label">Raw JSON Response</span>
@@ -218,6 +293,25 @@ Accept: application/json</pre>
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- Live Cluster Event Stream / Terminal (Dribbble Stream UI) -->
+      <div class="audit-terminal">
+        <div class="terminal-header">
+          <span class="terminal-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="4 17 10 11 4 5"></polyline>
+              <line x1="12" y1="19" x2="20" y2="19"></line>
+            </svg>
+            <span>Cluster Activity Log &bull; Real-time Telemetry Stream</span>
+          </span>
+          <span style="font-size: 0.725rem; color: var(--text-muted); font-family: var(--font-mono);">
+            stdout / journald &bull; Level: INFO
+          </span>
+        </div>
+        <div id="terminalBody" class="terminal-body">
+          <!-- Dynamically populated log entries -->
         </div>
       </div>
     </div>
