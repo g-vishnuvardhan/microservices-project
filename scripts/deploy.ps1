@@ -1,10 +1,6 @@
-<#
-.SYNOPSIS
-    Automated Deployment Script for CloudMart Microservices on Kubernetes
-.DESCRIPTION
-    Builds container images, applies declarative manifests, verifies rollout status, 
-    and validates cluster health.
-#>
+# ==============================================================================
+# Automated Microservices Deployment Script (PowerShell)
+# ==============================================================================
 
 $ErrorActionPreference = "Stop"
 
@@ -20,51 +16,37 @@ function Write-Success {
     Write-Host "[SUCCESS] $Message" -ForegroundColor Green
 }
 
-function Write-Warn {
-    param([string]$Message)
-    Write-Host "[WARNING] $Message" -ForegroundColor Magenta
-}
-
 Clear-Host
 Write-Host "=================================================================" -ForegroundColor Cyan
-Write-Host " CloudMart: Automated Microservices Deployment Script (DevOps Lab)" -ForegroundColor Green
+Write-Host " Automated Microservices Deployment to Kubernetes (DevOps Lab)" -ForegroundColor Green
 Write-Host "=================================================================" -ForegroundColor Cyan
 
 # 1. Pre-Flight Checks
 Write-Step "Checking Prerequisites (Docker & Kubernetes)"
 
-# Check Docker CLI
 if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
     Write-Error "Docker CLI is not installed or not in your system PATH."
 }
 Write-Success "Docker CLI found."
 
-# Check if Docker daemon is running
 try {
     $dockerInfo = docker info 2>&1
-    if ($LASTEXITCODE -ne 0) {
-        throw $dockerInfo
-    }
+    if ($LASTEXITCODE -ne 0) { throw $dockerInfo }
     Write-Success "Docker daemon is active and running."
 } catch {
     Write-Host "`n[ERROR] Docker daemon is not running!" -ForegroundColor Red
     Write-Host "Please start Docker Desktop and ensure the engine has fully started." -ForegroundColor Yellow
-    Write-Host "If using Docker Desktop on Windows, right-click the Docker tray icon and start it." -ForegroundColor Yellow
     exit 1
 }
 
-# Check Kubectl CLI
 if (-not (Get-Command kubectl -ErrorAction SilentlyContinue)) {
     Write-Error "kubectl is not installed or not in your system PATH."
 }
 Write-Success "kubectl found."
 
-# Check Kubernetes cluster connectivity
 try {
     $clusterInfo = kubectl cluster-info 2>&1
-    if ($LASTEXITCODE -ne 0) {
-        throw $clusterInfo
-    }
+    if ($LASTEXITCODE -ne 0) { throw $clusterInfo }
     Write-Success "Kubernetes cluster is reachable."
 } catch {
     Write-Host "`n[ERROR] Kubernetes cluster is unreachable!" -ForegroundColor Red
@@ -73,70 +55,73 @@ try {
     exit 1
 }
 
-# 2. Build Container Images
-Write-Step "Building Microservice Docker Images"
+# 2. Build Maven Artifacts
+Write-Step "Building Spring Boot Microservices (Maven)"
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $projectRoot = Split-Path -Parent $scriptDir
 
-Write-Host "Building Product Service image..." -ForegroundColor Cyan
-docker build -t cloudmart-product:v1 "$projectRoot/services/product-service"
-Write-Success "Built cloudmart-product:v1"
+Write-Host "Compiling User Service..." -ForegroundColor Cyan
+Push-Location "$projectRoot\user-service"
+try {
+    .\mvnw.cmd clean package -DskipTests
+    if ($LASTEXITCODE -ne 0) { throw "User Service Maven build failed" }
+    Write-Success "User Service package created successfully."
+} finally {
+    Pop-Location
+}
 
-Write-Host "Building Order Service image..." -ForegroundColor Cyan
-docker build -t cloudmart-order:v1 "$projectRoot/services/order-service"
-Write-Success "Built cloudmart-order:v1"
+Write-Host "Compiling Product Service..." -ForegroundColor Cyan
+Push-Location "$projectRoot\product-service"
+try {
+    .\mvnw.cmd clean package -DskipTests
+    if ($LASTEXITCODE -ne 0) { throw "Product Service Maven build failed" }
+    Write-Success "Product Service package created successfully."
+} finally {
+    Pop-Location
+}
 
-Write-Host "Building Frontend Service image..." -ForegroundColor Cyan
-docker build -t cloudmart-frontend:v1 "$projectRoot/services/frontend"
-Write-Success "Built cloudmart-frontend:v1"
+# 3. Build Docker Images
+Write-Step "Building Container Images"
 
-# 3. Apply Kubernetes Manifests
-Write-Step "Deploying Manifests to Kubernetes (Namespace: microservices-lab)"
+Write-Host "Building user-service image..." -ForegroundColor Cyan
+docker build -t ghcr.io/g-vishnuvardhan/user-service:latest "$projectRoot\user-service"
+Write-Success "Built user-service image."
 
-$k8sDir = Join-Path $projectRoot "k8s"
+Write-Host "Building product-service image..." -ForegroundColor Cyan
+docker build -t ghcr.io/g-vishnuvardhan/product-service:latest "$projectRoot\product-service"
+Write-Success "Built product-service image."
 
-kubectl apply -f "$k8sDir/00-namespace.yaml"
-kubectl apply -f "$k8sDir/01-configmap-secrets.yaml"
-kubectl apply -f "$k8sDir/02-postgres-pvc.yaml"
-kubectl apply -f "$k8sDir/03-postgres-deployment.yaml"
-kubectl apply -f "$k8sDir/04-product-service.yaml"
-kubectl apply -f "$k8sDir/05-order-service.yaml"
-kubectl apply -f "$k8sDir/06-frontend-service.yaml"
-kubectl apply -f "$k8sDir/07-hpa.yaml"
+Write-Host "Building frontend-service image..." -ForegroundColor Cyan
+docker build -t ghcr.io/g-vishnuvardhan/frontend-service:latest "$projectRoot\frontend-service"
+Write-Success "Built frontend-service image."
 
-Write-Success "All manifests successfully submitted to Kubernetes cluster."
+# 4. Apply Kubernetes Manifests
+Write-Step "Deploying Manifests to Kubernetes Cluster"
+kubectl apply -f "$projectRoot\k8s"
+Write-Success "All manifests applied to cluster."
 
-# 4. Wait for Rollouts
-Write-Step "Monitoring Pod Rollouts (Self-Healing & Readiness Checks)"
+# 5. Check Rollout Status
+Write-Step "Verifying Pod Rollouts & Health Probes"
+Write-Host "Waiting for user-service rollout..." -ForegroundColor Cyan
+kubectl rollout status deployment/user-service --timeout=120s
 
-Write-Host "Waiting for PostgreSQL database to become Ready..." -ForegroundColor Cyan
-kubectl rollout status deployment/postgres-db -n microservices-lab --timeout=90s
+Write-Host "Waiting for product-service rollout..." -ForegroundColor Cyan
+kubectl rollout status deployment/product-service --timeout=120s
 
-Write-Host "Waiting for Product Service pods to become Ready..." -ForegroundColor Cyan
-kubectl rollout status deployment/product-service -n microservices-lab --timeout=90s
+Write-Host "Waiting for frontend-service rollout..." -ForegroundColor Cyan
+kubectl rollout status deployment/frontend-service --timeout=120s
 
-Write-Host "Waiting for Order Service pods to become Ready..." -ForegroundColor Cyan
-kubectl rollout status deployment/order-service -n microservices-lab --timeout=90s
+Write-Success "All microservices are ready and passing probes!"
 
-Write-Host "Waiting for Frontend Service pods to become Ready..." -ForegroundColor Cyan
-kubectl rollout status deployment/frontend-service -n microservices-lab --timeout=90s
-
-Write-Success "All microservice deployments are healthy and running with requested replicas!"
-
-# 5. Display Cluster Summary
-Write-Step "Deployment Summary & Cluster State"
-kubectl get all -n microservices-lab
+# 6. Display Cluster Summary
+Write-Step "Cluster State Summary"
+kubectl get pods -l 'app in (user-service, product-service, frontend-service)' -o wide
+kubectl get svc -l 'app in (user-service, product-service, frontend-service)' -o wide
+kubectl get hpa
 
 Write-Host "`n=======================================================" -ForegroundColor Green
-Write-Host " CloudMart Microservices Deployed Successfully!" -ForegroundColor Green
+Write-Host " Microservices Deployed Successfully!" -ForegroundColor Green
 Write-Host "=======================================================" -ForegroundColor Green
-Write-Host " Access the Frontend Web Application at:" -ForegroundColor Yellow
-Write-Host "   URL: http://localhost:30080" -ForegroundColor Cyan
-Write-Host "`n (If NodePort 30080 is not mapped directly on your driver, run:)" -ForegroundColor DarkGray
-Write-Host "   kubectl port-forward svc/frontend-service 5000:5000 -n microservices-lab" -ForegroundColor DarkGray
-Write-Host "   Then open: http://localhost:5000" -ForegroundColor DarkGray
-Write-Host "`n To simulate load for Auto-Scaling (HPA):" -ForegroundColor Yellow
-Write-Host "   powershell -File scripts/test-traffic.ps1" -ForegroundColor Cyan
-Write-Host "`n To clean up the lab cluster:" -ForegroundColor Yellow
-Write-Host "   powershell -File scripts/cleanup.ps1" -ForegroundColor Cyan
+Write-Host " Web Interface: http://localhost:30080" -ForegroundColor Cyan
+Write-Host " Port-forward alternative: kubectl port-forward svc/frontend-service 8080:80" -ForegroundColor DarkGray

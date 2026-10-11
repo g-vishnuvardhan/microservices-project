@@ -1,248 +1,137 @@
-# 🚀 CloudMart: Automated Microservices Deployment on Docker & Kubernetes
+# Automated Microservices Deployment Using Docker and Kubernetes
 
+[![CI/CD Pipeline](https://github.com/g-vishnuvardhan/microservices-project/actions/workflows/build.yml/badge.svg)](https://github.com/g-vishnuvardhan/microservices-project/actions/workflows/build.yml)
 [![Kubernetes](https://img.shields.io/badge/Kubernetes-v1.28+-326ce5.svg?logo=kubernetes&logoColor=white)](https://kubernetes.io/)
 [![Docker](https://img.shields.io/badge/Docker-v24+-2496ed.svg?logo=docker&logoColor=white)](https://www.docker.com/)
-[![Python](https://img.shields.io/badge/Python-3.11-3776ab.svg?logo=python&logoColor=white)](https://www.python.org/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169e1.svg?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)]()
+[![Java](https://img.shields.io/badge/Java-25-orange.svg?logo=openjdk&logoColor=white)](https://openjdk.org/)
+[![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.4-6db33f.svg?logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
+[![Vercel Deployment](https://img.shields.io/badge/Vercel-Deployed-black.svg?logo=vercel&logoColor=white)](https://microservices-project-sooty.vercel.app/)
 
-> **University Lab Project / Academic Portfolio:** A production-grade distributed microservices application engineered to demonstrate containerization, declarative cluster orchestration, fault tolerance, persistent storage, and deployment automation.
-
----
-
-## 📑 Table of Contents
-- [Architecture Overview](#-architecture-overview)
-- [Microservices Catalog](#-microservices-catalog)
-- [Academic Deliverables](#-academic-deliverables)
-- [Project Directory Layout](#-project-directory-layout)
-- [Prerequisites](#-prerequisites)
-- [Quick Start: 1-Click Automated Deployment](#-quick-start-1-click-automated-deployment)
-  - [Option A: Kubernetes Automated Deployment](#option-a-kubernetes-automated-deployment-recommended)
-  - [Option B: Local Docker Compose](#option-b-local-docker-compose-fallback)
-- [Verifying Cloud-Native Capabilities](#-verifying-cloud-native-capabilities)
-  - [1. Round-Robin Load Balancing](#1-round-robin-load-balancing)
-  - [2. Self-Healing & Fault Tolerance](#2-self-healing--fault-tolerance)
-  - [3. Stateful Database Persistence](#3-stateful-database-persistence)
-  - [4. Horizontal Pod Autoscaler (HPA)](#4-horizontal-pod-autoscaler-hpa)
-- [CI/CD Pipeline](#-cicd-pipeline)
-- [Teardown & Cleanup](#-teardown--cleanup)
+An end-to-end cloud-native microservices engineering project demonstrating automated containerization, Kubernetes cluster orchestration, and automated CI/CD pipelines.
 
 ---
 
-## 🏛 Architecture Overview
+## Architecture Overview
 
-```
-                                  [ User Browser ]
-                                         │
-                                         │ HTTP (Port 30080)
-                                         ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│ Kubernetes Cluster (Namespace: microservices-lab)                           │
-│                                                                             │
-│  ┌─────────────────────────────────┐                                        │
-│  │ frontend-service (2 Replicas)   │ NodePort Service (Port 30080)          │
-│  │ - Python Flask Web Dashboard    │                                        │
-│  │ - Real-time Cluster Inspector   │                                        │
-│  └────────────────┬────────────────┘                                        │
-│                   │                                                         │
-│          Internal │ HTTP REST                                               │
-│          Calls    ├───────────────────────────────┐                         │
-│                   ▼                               ▼                         │
-│  ┌─────────────────────────────────┐   ┌─────────────────────────────────┐  │
-│  │ product-service (2 Replicas)    │   │ order-service (2 Replicas)      │  │
-│  │ - REST API (Port 5001)          │   │ - REST API (Port 5002)          │  │
-│  │ - ClusterIP Service             │   │ - ClusterIP Service             │  │
-│  └─────────────────────────────────┘   └────────────────┬────────────────┘  │
-│                                                         │                   │
-│                                                         │ SQL Queries       │
-│                                                         ▼                   │
-│                                        ┌─────────────────────────────────┐  │
-│                                        │ postgres-db (1 Replica)         │  │
-│                                        │ - Port 5432 (ClusterIP)         │  │
-│                                        │ - Bound to: postgres-pvc (1Gi)  │  │
-│                                        │ - Secret: cloudmart-secrets     │  │
-│                                        └─────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph Client ["Client & Presentation Layer"]
+        Browser["User Web Browser"] --> Frontend["frontend-service (Nginx & Web UI)<br>NodePort: 30080"]
+    end
+
+    subgraph VCS ["Source Control & CI/CD"]
+        Dev["Developer (git push)"] --> Repo["GitHub Repository"]
+        Repo --> GHA["GitHub Actions Workflow<br>(build.yml)"]
+        GHA --> Build["Phase 1: Build & Package<br>(Java 25 + Maven)"]
+        Build --> DockerBuild["Phase 2: Multi-Stage Docker Build"]
+        DockerBuild --> GHCR["Phase 3: GitHub Container Registry<br>(ghcr.io)"]
+    end
+
+    subgraph K8S ["Kubernetes Orchestration Cluster"]
+        GHCR --> Deploy["Phase 4: Automated Rollout"]
+        Frontend -->|Reverse Proxy /api/users| USvc["user-service (Port 8081)"]
+        Frontend -->|Reverse Proxy /api/products| PSvc["product-service (Port 8082)"]
+        USvc --> PodU1["User Pod 1"]
+        USvc --> PodU2["User Pod 2"]
+        PSvc --> PodP1["Product Pod 1"]
+        PSvc --> PodP2["Product Pod 2"]
+        HPA["Horizontal Pod Autoscaler (HPA)"] -.->|Auto-scales| USvc
+        HPA -.->|Auto-scales| PSvc
+        HPA -.->|Auto-scales| Frontend
+    end
 ```
 
 ---
 
-## 📦 Microservices Catalog
+## Interactive Web Showcase Interface
 
-| Service | Technology | Port | K8s Service Type | Purpose |
-| :--- | :--- | :--- | :--- | :--- |
-| **`frontend-service`** | Python 3.11, Flask, Bootstrap 5.3 | `5000` | `NodePort: 30080` | Client UI & Reverse Proxy with live cluster telemetry |
-| **`product-service`** | Python 3.11, Flask, REST | `5001` | `ClusterIP` | Catalog management & stock reservation |
-| **`order-service`** | Python 3.11, Flask, `psycopg2` | `5002` | `ClusterIP` | Checkout processor & relational transactions |
-| **`postgres-db`** | PostgreSQL 16 Alpine | `5432` | `ClusterIP` | Durable relational persistence via PVC |
+This project includes a dedicated **Frontend Dashboard Service** ([`frontend-service/`](file:///c:/Users/1620g/microservices-project/frontend-service)):
+- **Input & Output Console:** Inspect real HTTP request payloads, target microservices, cluster ports, headers, response status codes, and round-trip latencies.
+- **Microservices Data:** Query `user-service` and `product-service` entities with live and preview modes.
+- **Actuator Health Probes:** Inspect Kubernetes liveness and readiness states directly via Spring Boot Actuator endpoints.
+- **Live Deployment:** Accessible on Vercel at [https://microservices-project-sooty.vercel.app/](https://microservices-project-sooty.vercel.app/) and locally on Kubernetes at `http://localhost:30080`.
 
 ---
 
-## 📚 Academic Deliverables
+## Academic Lab Deliverables
 
-This repository is structured for formal university evaluation and includes:
-- 📖 [**LAB_MANUAL.md**](LAB_MANUAL.md): Standard university lab experiment format (Aim, Theory, Step-by-Step Procedure, Expected Output, and Troubleshooting).
-- 💡 [**VIVA_QUESTIONS.md**](VIVA_QUESTIONS.md): Top 25 high-frequency Viva Voce questions with detailed technical answers.
+- 📖 [**LAB_MANUAL.md**](LAB_MANUAL.md): Comprehensive university laboratory manual (Aim, Theory, Step-by-Step Procedure, Expected Output, and Troubleshooting).
+- 💡 [**VIVA_QUESTIONS.md**](VIVA_QUESTIONS.md): Top 25 high-frequency Viva Voce questions with detailed technical answers on Docker and Kubernetes.
 - 📝 [**PROJECT_REPORT.md**](PROJECT_REPORT.md): Ready-to-submit formal Academic Project Report.
 
 ---
 
-## 📂 Project Directory Layout
+## Project Structure
 
-```
+```text
 microservices-project/
 ├── .github/
 │   └── workflows/
-│       └── ci-cd.yml                # Automated GitHub Actions CI/CD Pipeline
-├── docker-compose.yml               # Local multi-container Docker Compose stack
-├── README.md                        # Master project documentation
-├── LAB_MANUAL.md                    # University Lab Manual
-├── PROJECT_REPORT.md                # Academic Lab Report
-├── VIVA_QUESTIONS.md                # 25 Curated Viva Voce Questions & Answers
-├── services/
-│   ├── frontend/                    # Web GUI & Cluster Inspector
-│   │   ├── Dockerfile
-│   │   ├── app.py
-│   │   ├── requirements.txt
-│   │   └── templates/index.html
-│   ├── product-service/             # Product catalog REST API
-│   │   ├── Dockerfile
-│   │   ├── app.py
-│   │   └── requirements.txt
-│   └── order-service/               # Order transaction REST API
-│       ├── Dockerfile
-│       ├── app.py
-│       └── requirements.txt
-├── k8s/                             # Declarative Kubernetes Manifests
-│   ├── 00-namespace.yaml            # Isolated namespace (microservices-lab)
-│   ├── 01-configmap-secrets.yaml    # ConfigMap & Secret definitions
-│   ├── 02-postgres-pvc.yaml         # PersistentVolumeClaim (1Gi)
-│   ├── 03-postgres-deployment.yaml  # Stateful PostgreSQL deployment & service
-│   ├── 04-product-service.yaml      # Product deployment & ClusterIP service
-│   ├── 05-order-service.yaml        # Order deployment & ClusterIP service
-│   ├── 06-frontend-service.yaml     # Frontend deployment & NodePort service
-│   ├── 07-hpa.yaml                  # Horizontal Pod Autoscalers (50% CPU target)
-│   └── kustomization.yaml           # Declarative Kustomize resource index
-└── scripts/
-    ├── deploy.ps1                   # 1-Click deployment script (PowerShell)
-    ├── deploy.sh                    # 1-Click deployment script (Bash)
-    ├── cleanup.ps1                  # Cluster teardown script (PowerShell)
-    ├── cleanup.sh                   # Cluster teardown script (Bash)
-    └── test-traffic.ps1             # HPA load generator & stress testing tool
+│       └── build.yml               # Automated CI/CD Workflow (Build -> GHCR -> K8s)
+├── frontend-service/               # Showcase Web Interface & Reverse Proxy
+│   ├── Dockerfile                  # Lightweight Nginx container
+│   ├── nginx.conf                  # Reverse proxy config (/api/* -> cluster services)
+│   └── public/
+│       ├── index.html              # Professional UI dashboard
+│       ├── style.css               # Clean, responsive styling
+│       ├── app.js                  # Request/Response execution logic
+│       ├── privacy.html            # Privacy Policy
+│       ├── terms.html              # Terms and Conditions
+│       └── favicon.svg             # Vector favicon
+├── k8s/
+│   ├── frontend-service-deployment.yaml # Frontend Pod deployment (2 replicas)
+│   ├── frontend-service-service.yaml    # NodePort 30080 exposure
+│   ├── user-service-deployment.yaml     # User service replicas & probes
+│   ├── user-service-service.yaml        # User service ClusterIP/NodePort exposure
+│   ├── product-service-deployment.yaml  # Product service replicas & probes
+│   ├── product-service-service.yaml     # Product service ClusterIP/NodePort exposure
+│   ├── ingress.yaml                     # Ingress routing rules
+│   └── hpa.yaml                         # Horizontal Pod Autoscaling policies
+├── scripts/
+│   ├── deploy.ps1                  # 1-Click deployment script (PowerShell)
+│   ├── deploy.sh                   # 1-Click deployment script (Bash)
+│   ├── cleanup.ps1                 # Teardown script (PowerShell)
+│   ├── cleanup.sh                  # Teardown script (Bash)
+│   └── test-traffic.ps1            # HPA load generator & stress testing tool
+├── user-service/
+│   ├── Dockerfile                  # Multi-stage Docker build (Maven + JRE 25)
+│   ├── pom.xml                     # Spring Boot, WebMVC, and Actuator dependencies
+│   └── src/                        # User Service source code & health probes
+├── product-service/
+│   ├── Dockerfile                  # Multi-stage Docker build (Maven + JRE 25)
+│   ├── pom.xml                     # Spring Boot, WebMVC, and Actuator dependencies
+│   └── src/                        # Product Service source code & health probes
+├── vercel.json                     # Vercel deployment configuration
+├── index.html                      # Root web entrypoint for Vercel
+├── privacy.html                    # Root privacy policy
+├── terms.html                      # Root terms and conditions
+├── favicon.svg                     # Root favicon
+└── README.md
 ```
 
 ---
 
-## ⚙ Prerequisites
+## Quick Start: Automated Deployment
 
-Before deploying, ensure you have:
-1. **Docker Desktop** (or Docker Engine) installed with **Kubernetes enabled** in Docker Desktop settings.
-2. `kubectl` command-line utility installed.
-3. PowerShell 7+ (on Windows) or Bash (on Linux/macOS).
-
----
-
-## 🚀 Quick Start: 1-Click Automated Deployment
-
-### Option A: Kubernetes Automated Deployment (Recommended)
-
-#### On Windows (PowerShell):
+### Option A: Using PowerShell (Windows)
 ```powershell
 .\scripts\deploy.ps1
 ```
 
-#### On Linux / macOS / Git Bash:
+### Option B: Using Bash (Linux/macOS)
 ```bash
-chmod +x scripts/*.sh
+chmod +x ./scripts/deploy.sh
 ./scripts/deploy.sh
 ```
 
-The script automatically:
-1. Validates Docker and Kubernetes cluster connectivity.
-2. Builds all three Docker container images with production tags.
-3. Applies declarative manifests to the `microservices-lab` namespace.
-4. Waits for pod readiness probes and rollout status.
-5. Prints the deployment summary table and access URL.
-
-🌐 **Access the Web Dashboard:** Open [http://localhost:30080](http://localhost:30080) in your web browser.
-
-*(If your environment does not bind NodePorts to localhost, run `kubectl port-forward svc/frontend-service 5000:5000 -n microservices-lab` and navigate to [http://localhost:5000](http://localhost:5000)).*
-
 ---
 
-### Option B: Local Docker Compose (Fallback)
+## API & Interface Endpoints
 
-If Kubernetes is not running on your machine, you can run the entire 4-container stack via Docker Compose:
-```bash
-# Build and run stack in background
-docker compose up -d --build
-
-# View running services
-docker compose ps
-
-# Access application at http://localhost:5000
-
-# Stop stack
-docker compose down
-```
-
----
-
-## 🧪 Verifying Cloud-Native Capabilities
-
-### 1. Round-Robin Load Balancing
-- Observe the **Serving Frontend Pod** hostname in the top banner of the web UI.
-- Refresh your browser multiple times.
-- Notice the serving pod toggling between replica names (e.g., `frontend-service-xxx` and `frontend-service-yyy`), proving round-robin traffic distribution across pods.
-
-### 2. Self-Healing & Fault Tolerance
-Simulate pod failure by terminating an active pod:
-```bash
-kubectl delete pod -l app=frontend-service -n microservices-lab
-kubectl get pods -n microservices-lab -w
-```
-**Result:** The Deployment controller immediately provisions a new replacement pod within seconds to maintain the desired replica count of 2.
-
-### 3. Stateful Database Persistence
-1. Place an order via the web UI.
-2. Verify the order appears in the **Order History** tab.
-3. Terminate the PostgreSQL database pod:
-   ```bash
-   kubectl delete pod -l app=postgres-db -n microservices-lab
-   ```
-4. Once the new PostgreSQL pod is ready, refresh **Order History**.
-5. **Result:** All orders remain intact because data is stored on the `PersistentVolumeClaim` (`postgres-pvc`).
-
-### 4. Horizontal Pod Autoscaler (HPA)
-Generate synthetic traffic to observe automated scaling:
-```powershell
-powershell -File scripts/test-traffic.ps1 -RequestsCount 400
-```
-Monitor scaling in another terminal:
-```bash
-kubectl get hpa -n microservices-lab -w
-kubectl get pods -n microservices-lab -w
-```
-**Result:** As CPU usage exceeds 50%, the HPA controller scales the deployment from 2 to 5 pods.
-
----
-
-## 🔄 CI/CD Pipeline
-
-The `.github/workflows/ci-cd.yml` pipeline runs on every push:
-1. **Lint & Test:** Validates code syntax using `flake8`.
-2. **Container Build:** Compiles and tags container images for all microservices.
-3. **K8s Dry-Run:** Executes `kubectl apply --dry-run=client -k k8s/` to validate syntax and schema compliance of all manifests.
-
----
-
-## 🧹 Teardown & Cleanup
-
-To release resources:
-```powershell
-# PowerShell
-.\scripts\cleanup.ps1
-
-# Bash
-./scripts/cleanup.sh
-```
+| Service | Method | Endpoint / Port | Description |
+| :--- | :--- | :--- | :--- |
+| **Web Dashboard** | GET | `http://localhost:30080` (NodePort) | Interactive Input & Output Console |
+| **User Service** | GET | `/api/users` (Port 8081) | Retrieve list of all users |
+| **User Service** | GET | `/api/health/users` | User Service Actuator health probe |
+| **Product Service** | GET | `/api/products` (Port 8082) | Retrieve list of all products |
+| **Product Service** | GET | `/api/health/products` | Product Service Actuator health probe |
