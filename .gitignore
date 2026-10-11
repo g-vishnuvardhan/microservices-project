@@ -1,20 +1,7 @@
-# Byte-compiled / optimized / DLL files
-__pycache__/
-*.py[cod]
-*$py.class
-
-# Virtual environments
 .env
-.venv
-env/
-venv/
-ENV/
-
-# IDE files
-.idea/
-.vscode/
-*.swp
-*.swo
-
-# Docker / Kubernetes temporary files
-*.log
+.venv/
+__pycache__/
+*.pyc
+*.db
+.pytest_cache/
+artifacts/

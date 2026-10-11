@@ -1,48 +1,11 @@
-<#
-.SYNOPSIS
-    Load Generator Script to Demonstrate Kubernetes Horizontal Pod Autoscaler (HPA)
-.DESCRIPTION
-    Simulates concurrent client requests against the microservices cluster
-    to drive CPU utilization and trigger automatic pod scale-out.
-#>
-
-param(
-    [string]$TargetUrl = "http://localhost:30080",
-    [int]$RequestsCount = 200,
-    [int]$Concurrency = 5
-)
-
-Write-Host "==========================================================" -ForegroundColor Cyan
-Write-Host " Microservices Cluster: HPA Load Generator" -ForegroundColor Green
-Write-Host "==========================================================" -ForegroundColor Cyan
-Write-Host "Target URL: $TargetUrl" -ForegroundColor Yellow
-Write-Host "Total Requests: $RequestsCount" -ForegroundColor Yellow
-Write-Host "`nStarting high-throughput request generation..." -ForegroundColor Cyan
-
-$successCount = 0
-$failCount = 0
-
-$stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
-
-for ($i = 1; $i -le $RequestsCount; $i++) {
-    try {
-        $endpoint = if ($i % 2 -eq 0) { "$TargetUrl/api/users" } else { "$TargetUrl/api/products" }
-        $resp = Invoke-RestMethod -Uri $endpoint -Method Get -TimeoutSec 2
-        $successCount++
-        if ($i % 25 -eq 0) {
-            Write-Host "Sent $i / $RequestsCount requests... (Target: $endpoint)" -ForegroundColor DarkCyan
-        }
-    } catch {
-        $failCount++
-    }
-}
-
-$stopwatch.Stop()
-
-Write-Host "`n==========================================================" -ForegroundColor Green
-Write-Host " Load Test Complete in $($stopwatch.Elapsed.TotalSeconds.ToString('F2')) seconds" -ForegroundColor Green
-Write-Host " Successful Requests: $successCount" -ForegroundColor Cyan
-Write-Host " Failed Requests: $failCount" -ForegroundColor $(if ($failCount -gt 0) { "Red" } else { "DarkGray" })
-Write-Host "`nTo observe pod auto-scaling in action, run:" -ForegroundColor Yellow
-Write-Host "  kubectl get hpa -w" -ForegroundColor Magenta
-Write-Host "  kubectl get pods -w" -ForegroundColor Magenta
+param([string]$BaseUrl='http://localhost:30080',[ValidateRange(1,120)][int]$Seconds=45,[ValidateRange(1,32)][int]$Concurrency=8)
+$ErrorActionPreference='Stop'
+if($PSVersionTable.PSVersion.Major -lt 7){throw 'Use PowerShell 7 (pwsh) for parallel load requests.'}
+$url="$($BaseUrl.TrimEnd('/'))/api/demo/load"
+$end=[DateTime]::UtcNow.AddSeconds($Seconds)
+1..$Concurrency | ForEach-Object -Parallel {
+  $success=0;$failed=0
+  while([DateTime]::UtcNow -lt $using:end){try{Invoke-RestMethod -Method Post -Uri $using:url -TimeoutSec 10 | Out-Null;$success++}catch{$failed++}}
+  [pscustomobject]@{Worker=$_;Success=$success;Failed=$failed}
+} -ThrottleLimit $Concurrency
+Write-Host 'Watch kubectl get hpa -n microservices-lab -w. Metrics Server and sustained CPU load are required; scaling is not guaranteed.'

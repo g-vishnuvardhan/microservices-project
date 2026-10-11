@@ -1,127 +1,40 @@
-# ==============================================================================
-# Automated Microservices Deployment Script (PowerShell)
-# ==============================================================================
-
-$ErrorActionPreference = "Stop"
-
-function Write-Step {
-    param([string]$Message)
-    Write-Host "`n=======================================================" -ForegroundColor Cyan
-    Write-Host "[STEP] $Message" -ForegroundColor Yellow
-    Write-Host "=======================================================" -ForegroundColor Cyan
-}
-
-function Write-Success {
-    param([string]$Message)
-    Write-Host "[SUCCESS] $Message" -ForegroundColor Green
-}
-
-Clear-Host
-Write-Host "=================================================================" -ForegroundColor Cyan
-Write-Host " Automated Microservices Deployment to Kubernetes (DevOps Lab)" -ForegroundColor Green
-Write-Host "=================================================================" -ForegroundColor Cyan
-
-# 1. Pre-Flight Checks
-Write-Step "Checking Prerequisites (Docker & Kubernetes)"
-
-if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
-    Write-Error "Docker CLI is not installed or not in your system PATH."
-}
-Write-Success "Docker CLI found."
-
+param([ValidateSet('Kubernetes','Compose')][string]$Mode='Kubernetes',[string]$DbPassword='cloudmart-lab-change-me')
+$ErrorActionPreference='Stop'
+$projectRoot=Split-Path -Parent $PSScriptRoot
+function Run { param([string]$Tool,[Parameter(ValueFromRemainingArguments=$true)][string[]]$Arguments) & $Tool @Arguments; if($LASTEXITCODE -ne 0){throw "$Tool failed with exit code $LASTEXITCODE"} }
+Push-Location $projectRoot
 try {
-    $dockerInfo = docker info 2>&1
-    if ($LASTEXITCODE -ne 0) { throw $dockerInfo }
-    Write-Success "Docker daemon is active and running."
-} catch {
-    Write-Host "`n[ERROR] Docker daemon is not running!" -ForegroundColor Red
-    Write-Host "Please start Docker Desktop and ensure the engine has fully started." -ForegroundColor Yellow
-    exit 1
-}
-
-if (-not (Get-Command kubectl -ErrorAction SilentlyContinue)) {
-    Write-Error "kubectl is not installed or not in your system PATH."
-}
-Write-Success "kubectl found."
-
-try {
-    $clusterInfo = kubectl cluster-info 2>&1
-    if ($LASTEXITCODE -ne 0) { throw $clusterInfo }
-    Write-Success "Kubernetes cluster is reachable."
-} catch {
-    Write-Host "`n[ERROR] Kubernetes cluster is unreachable!" -ForegroundColor Red
-    Write-Host "Please enable Kubernetes in Docker Desktop (Settings -> Kubernetes -> Enable Kubernetes)" -ForegroundColor Yellow
-    Write-Host "Or start Minikube: 'minikube start'" -ForegroundColor Yellow
-    exit 1
-}
-
-# 2. Build Maven Artifacts
-Write-Step "Building Spring Boot Microservices (Maven)"
-
-$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$projectRoot = Split-Path -Parent $scriptDir
-
-Write-Host "Compiling User Service..." -ForegroundColor Cyan
-Push-Location "$projectRoot\user-service"
-try {
-    .\mvnw.cmd clean package -DskipTests
-    if ($LASTEXITCODE -ne 0) { throw "User Service Maven build failed" }
-    Write-Success "User Service package created successfully."
-} finally {
-    Pop-Location
-}
-
-Write-Host "Compiling Product Service..." -ForegroundColor Cyan
-Push-Location "$projectRoot\product-service"
-try {
-    .\mvnw.cmd clean package -DskipTests
-    if ($LASTEXITCODE -ne 0) { throw "Product Service Maven build failed" }
-    Write-Success "Product Service package created successfully."
-} finally {
-    Pop-Location
-}
-
-# 3. Build Docker Images
-Write-Step "Building Container Images"
-
-Write-Host "Building user-service image..." -ForegroundColor Cyan
-docker build -t ghcr.io/g-vishnuvardhan/user-service:latest "$projectRoot\user-service"
-Write-Success "Built user-service image."
-
-Write-Host "Building product-service image..." -ForegroundColor Cyan
-docker build -t ghcr.io/g-vishnuvardhan/product-service:latest "$projectRoot\product-service"
-Write-Success "Built product-service image."
-
-Write-Host "Building frontend-service image..." -ForegroundColor Cyan
-docker build -t ghcr.io/g-vishnuvardhan/frontend-service:latest "$projectRoot\frontend-service"
-Write-Success "Built frontend-service image."
-
-# 4. Apply Kubernetes Manifests
-Write-Step "Deploying Manifests to Kubernetes Cluster"
-kubectl apply -f "$projectRoot\k8s"
-Write-Success "All manifests applied to cluster."
-
-# 5. Check Rollout Status
-Write-Step "Verifying Pod Rollouts & Health Probes"
-Write-Host "Waiting for user-service rollout..." -ForegroundColor Cyan
-kubectl rollout status deployment/user-service --timeout=120s
-
-Write-Host "Waiting for product-service rollout..." -ForegroundColor Cyan
-kubectl rollout status deployment/product-service --timeout=120s
-
-Write-Host "Waiting for frontend-service rollout..." -ForegroundColor Cyan
-kubectl rollout status deployment/frontend-service --timeout=120s
-
-Write-Success "All microservices are ready and passing probes!"
-
-# 6. Display Cluster Summary
-Write-Step "Cluster State Summary"
-kubectl get pods -l 'app in (user-service, product-service, frontend-service)' -o wide
-kubectl get svc -l 'app in (user-service, product-service, frontend-service)' -o wide
-kubectl get hpa
-
-Write-Host "`n=======================================================" -ForegroundColor Green
-Write-Host " Microservices Deployed Successfully!" -ForegroundColor Green
-Write-Host "=======================================================" -ForegroundColor Green
-Write-Host " Web Interface: http://localhost:30080" -ForegroundColor Cyan
-Write-Host " Port-forward alternative: kubectl port-forward svc/frontend-service 8080:80" -ForegroundColor DarkGray
+  Run docker @('info','--format','{{.ServerVersion}}')
+  if($Mode -eq 'Compose') {
+    if(-not(Test-Path -LiteralPath '.env')){Set-Content -LiteralPath '.env' -Value "DB_PASSWORD=$DbPassword"}
+    Run docker @('compose','up','-d','--build','--wait','--wait-timeout','240')
+    $url='http://localhost:5000'
+  } else {
+    $context=kubectl config current-context
+    if($LASTEXITCODE -ne 0){throw 'Select a local Kubernetes context first.'}
+    if($context -ne 'docker-desktop' -and $context -ne 'minikube' -and -not $context.StartsWith('kind-')){throw "This lab script supports docker-desktop, minikube or kind contexts. Current: $context"}
+    Run kubectl @('cluster-info')
+    foreach($service in @('frontend','product-service','order-service')) {
+      $short=@{'frontend'='frontend';'product-service'='product';'order-service'='order'}[$service]
+      $image="cloudmart-${short}:v1"
+      Run docker @('build','-t',$image,"services/$service")
+      if($context.StartsWith('kind-')){Run kind @('load','docker-image',$image,'--name',$context.Substring(5))}
+      if($context -eq 'minikube'){Run minikube @('image','load',$image)}
+    }
+    Run kubectl @('apply','-f','k8s/00-namespace.yaml')
+    $secret=kubectl create secret generic cloudmart-secret -n microservices-lab "--from-literal=DB_PASSWORD=$DbPassword" --dry-run=client -o yaml
+    if($LASTEXITCODE -ne 0){throw 'Secret generation failed'}
+    $secret | kubectl apply -f - | Out-Null
+    if($LASTEXITCODE -ne 0){throw 'Secret application failed'}
+    Run kubectl @('apply','-k','k8s')
+    foreach($name in @('product-service','order-service','frontend-service')) {Run kubectl @('rollout','restart',"deployment/$name",'-n','microservices-lab')}
+    foreach($name in @('postgres-db','product-service','order-service','frontend-service')) {Run kubectl @('rollout','status',"deployment/$name",'-n','microservices-lab','--timeout=240s')}
+    Run kubectl @('get','pods,svc,pvc,hpa','-n','microservices-lab')
+    $url='http://localhost:30080'
+    if($context -eq 'minikube'){$url=(minikube service frontend-service -n microservices-lab --url | Select-Object -First 1);if($LASTEXITCODE -ne 0){throw 'Minikube service URL failed'}}
+    if($context.StartsWith('kind-')) {Write-Host 'In a second terminal: kubectl port-forward -n microservices-lab svc/frontend-service 5000:80';$url='http://localhost:5000'}
+  }
+  try { $health=Invoke-RestMethod "$url/api/inspector" -TimeoutSec 10; if(@($health.services | Where-Object {$_.status -ne 'healthy'}).Count){throw 'A backend service is not ready'}; Write-Host 'Application health checks passed.' }
+  catch { if($Mode -eq 'Kubernetes' -and $context.StartsWith('kind-')){Write-Warning 'Start the port-forward command above, then verify /api/inspector.'}else{throw} }
+  Write-Host "Open $url. Read DEMO_GUIDE.md for the college walkthrough."
+} finally {Pop-Location}

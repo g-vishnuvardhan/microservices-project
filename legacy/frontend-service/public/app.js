@@ -218,11 +218,11 @@ function init() {
   bindEvents();
   updateActiveTopologyNode(currentEndpointKey);
   updateInputPanel(currentEndpointKey);
-  
+
   // Seed initial log events
   logClusterEvent('SYSTEM', 'Cluster topology initialized &bull; Kind / Kubernetes v1.28.0');
   logClusterEvent('ROUTER', 'Ingress NodePort bound to host:30080 -> nginx reverse proxy');
-  
+
   executeRequest();
 }
 
@@ -316,7 +316,7 @@ function updateInputPanel(key) {
 
   elements.inputMethod.innerText = config.method;
   elements.inputMethod.className = `method-badge ${config.method === 'GET' ? 'method-get' : 'method-post'}`;
-  
+
   elements.inputUrl.innerText = config.path;
   elements.inputService.innerText = config.serviceName;
   elements.inputPort.innerText = config.clusterPort;

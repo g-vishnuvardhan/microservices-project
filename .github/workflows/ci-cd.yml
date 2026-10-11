@@ -1,0 +1,50 @@
+name: CloudMart CI and deployment rehearsal
+on:
+  push: {branches: [main]}
+  pull_request: {branches: [main]}
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - run: pip install -r services/order-service/requirements.txt pytest==8.4.2 PyYAML==6.0.3 ruff==0.14.0
+      - run: ruff check services scripts tests --select E9,F63,F7,F82
+      - run: python -m compileall -q services scripts
+      - run: pytest -q
+      - run: kubectl kustomize k8s > /tmp/cloudmart.yaml
+      - name: Build and test the full PostgreSQL stack
+        run: |
+          cp .env.example .env
+          docker compose config --quiet
+          docker compose up -d --build --wait --wait-timeout 240
+          python scripts/smoke-test.py http://localhost:5000
+      - name: Create disposable Kubernetes lab
+        uses: helm/kind-action@v1.12.0
+        with: {cluster_name: cloudmart-ci, wait: 120s}
+      - name: Rehearse Kubernetes deployment
+        run: |
+          kind load docker-image cloudmart-frontend:v1 cloudmart-product:v1 cloudmart-order:v1 --name cloudmart-ci
+          kubectl apply -f k8s/00-namespace.yaml
+          kubectl create secret generic cloudmart-secret -n microservices-lab --from-literal=DB_PASSWORD=cloudmart-lab-change-me
+          kubectl apply --dry-run=server -k k8s
+          kubectl apply -k k8s
+          for service in postgres-db product-service order-service frontend-service; do
+            kubectl rollout status deployment/$service -n microservices-lab --timeout=240s
+          done
+          kubectl port-forward -n microservices-lab svc/frontend-service 5003:80 > /tmp/forward.log 2>&1 &
+          sleep 3
+          python scripts/smoke-test.py http://localhost:5003
+      - name: Collect diagnostics
+        if: failure()
+        run: |
+          docker compose logs --tail 100
+          kubectl get pods,events -n microservices-lab || true
+      - name: Stop disposable Compose stack
+        if: always()
+        run: docker compose down --volumes
+# CI rehearses deployment in a disposable Kind cluster. It does not deploy to a
+# college or production cluster, and it never publishes images without configuration.

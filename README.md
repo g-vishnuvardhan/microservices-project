@@ -1,137 +1,112 @@
-# Automated Microservices Deployment Using Docker and Kubernetes
+# CloudMart
 
-[![CI/CD Pipeline](https://github.com/g-vishnuvardhan/microservices-project/actions/workflows/build.yml/badge.svg)](https://github.com/g-vishnuvardhan/microservices-project/actions/workflows/build.yml)
-[![Kubernetes](https://img.shields.io/badge/Kubernetes-v1.28+-326ce5.svg?logo=kubernetes&logoColor=white)](https://kubernetes.io/)
-[![Docker](https://img.shields.io/badge/Docker-v24+-2496ed.svg?logo=docker&logoColor=white)](https://www.docker.com/)
-[![Java](https://img.shields.io/badge/Java-25-orange.svg?logo=openjdk&logoColor=white)](https://openjdk.org/)
-[![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.4-6db33f.svg?logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
-[![Vercel Deployment](https://img.shields.io/badge/Vercel-Deployed-black.svg?logo=vercel&logoColor=white)](https://microservices-project-sooty.vercel.app/)
+**Automated Microservices Deployment Using Docker and Kubernetes**
+College lab implementation by **K. Rishi · 24H51A05T6**
 
-An end-to-end cloud-native microservices engineering project demonstrating automated containerization, Kubernetes cluster orchestration, and automated CI/CD pipelines.
+A working storefront with independent Flask services, server-validated checkout, PostgreSQL persistence, Docker Compose, Kubernetes manifests and deployment automation. A clearly labelled SQLite mode supports an application demonstration when Docker is unavailable.
 
----
+## Quick start on Windows
 
-## Architecture Overview
+Open a terminal in this folder. Start Docker Desktop and wait until `docker info` succeeds.
+
+```powershell
+Copy-Item .env.example .env
+# Edit .env and choose a local lab password before the first database start.
+docker compose up -d --build --wait --wait-timeout 240
+```
+
+Open **http://localhost:5000**. Or use `./scripts/deploy.ps1 -Mode Compose` for preflight checks and health verification.
+
+For Kubernetes, enable Docker Desktop Kubernetes and select its local context:
+
+```powershell
+kubectl config use-context docker-desktop
+./scripts/deploy.ps1 -DbPassword 'your-local-lab-password'
+```
+
+Open **http://localhost:30080**. The script also supports local Minikube and Kind contexts. For portable access, run `kubectl port-forward -n microservices-lab svc/frontend-service 5000:80` in a second terminal, then open port 5000. Stop the local demo first if it occupies that port.
+
+Linux/macOS: `bash scripts/deploy.sh compose` or `DB_PASSWORD='your-local-lab-password' bash scripts/deploy.sh kubernetes`.
+
+## Without Docker
+
+Python 3.11 or later is required. This runs real services with SQLite storage, not simulated Kubernetes telemetry.
+
+```powershell
+python -m venv .venv
+.venv/Scripts/python -m pip install -r services/order-service/requirements.txt
+.venv/Scripts/python scripts/run-local.py
+```
+
+Open http://localhost:5000. Keep the terminal running. Press Ctrl+C to stop. On Linux/macOS, use `.venv/bin/python`. The database file `cloudmart-demo.db` persists across local runs and is excluded from the submission ZIP.
+
+## What works
+
+- Responsive product catalog, search and category filters.
+- Cart quantity controls, locally saved cart and light/dark themes.
+- Server-side bill calculation using Decimal. Browser-supplied prices cannot change the bill.
+- Idempotent checkout: retrying an identical request key returns the original order.
+- Shared order history with database persistence.
+- Live inspector with actual backend readiness, responding hosts and measured internal latency.
+- Multi-stage images, non-root app users, health checks and internal Compose networking.
+- Dedicated Kubernetes namespace, ConfigMap, generated Secret, 1 Gi PVC, deployments, internal services, frontend NodePort, probes, resource limits and HPA definitions.
+- Windows and Bash deployment/cleanup scripts and a bounded traffic generator.
+- CI pipeline for lint checks, tests, container builds and a disposable Kind deployment rehearsal.
+
+## Architecture
 
 ```mermaid
-flowchart TD
-    subgraph Client ["Client & Presentation Layer"]
-        Browser["User Web Browser"] --> Frontend["frontend-service (Nginx & Web UI)<br>NodePort: 30080"]
-    end
-
-    subgraph VCS ["Source Control & CI/CD"]
-        Dev["Developer (git push)"] --> Repo["GitHub Repository"]
-        Repo --> GHA["GitHub Actions Workflow<br>(build.yml)"]
-        GHA --> Build["Phase 1: Build & Package<br>(Java 25 + Maven)"]
-        Build --> DockerBuild["Phase 2: Multi-Stage Docker Build"]
-        DockerBuild --> GHCR["Phase 3: GitHub Container Registry<br>(ghcr.io)"]
-    end
-
-    subgraph K8S ["Kubernetes Orchestration Cluster"]
-        GHCR --> Deploy["Phase 4: Automated Rollout"]
-        Frontend -->|Reverse Proxy /api/users| USvc["user-service (Port 8081)"]
-        Frontend -->|Reverse Proxy /api/products| PSvc["product-service (Port 8082)"]
-        USvc --> PodU1["User Pod 1"]
-        USvc --> PodU2["User Pod 2"]
-        PSvc --> PodP1["Product Pod 1"]
-        PSvc --> PodP2["Product Pod 2"]
-        HPA["Horizontal Pod Autoscaler (HPA)"] -.->|Auto-scales| USvc
-        HPA -.->|Auto-scales| PSvc
-        HPA -.->|Auto-scales| Frontend
-    end
+flowchart LR
+  Browser --> Frontend[Frontend Flask gateway]
+  Frontend --> Product[Product API]
+  Frontend --> Order[Order API]
+  Order --> Product
+  Order --> DB[(PostgreSQL 16)]
+  DB --> Volume[Compose volume / Kubernetes PVC]
 ```
 
----
+| Component | Internal port | Responsibility |
+|---|---:|---|
+| Frontend | 5000 | UI, API gateway, service inspector |
+| Product service | 5001 | Seeded catalog and quantity validation data |
+| Order service | 5002 | Validate cart, calculate bill, store orders |
+| PostgreSQL | 5432 | Persistent order records |
 
-## Interactive Web Showcase Interface
+Only the frontend publishes a host port in Compose. Kubernetes backend services use ClusterIP. Frontend uses NodePort 30080 with service port 80.
 
-This project includes a dedicated **Frontend Dashboard Service** ([`frontend-service/`](file:///c:/Users/1620g/microservices-project/frontend-service)):
-- **Input & Output Console:** Inspect real HTTP request payloads, target microservices, cluster ports, headers, response status codes, and round-trip latencies.
-- **Microservices Data:** Query `user-service` and `product-service` entities with live and preview modes.
-- **Actuator Health Probes:** Inspect Kubernetes liveness and readiness states directly via Spring Boot Actuator endpoints.
-- **Live Deployment:** Accessible on Vercel at [https://microservices-project-sooty.vercel.app/](https://microservices-project-sooty.vercel.app/) and locally on Kubernetes at `http://localhost:30080`.
+## Documentation
 
----
+- [College demonstration guide](DEMO_GUIDE.md)
+- [Lab manual](LAB_MANUAL.md)
+- [Academic project report](PROJECT_REPORT.md)
+- [25 viva questions and answers](VIVA_QUESTIONS.md)
+- [Design references](DESIGN_REFERENCES.md)
+- [Recorded verification status](VERIFICATION.md)
 
-## Academic Lab Deliverables
+## Important operating details
 
-- 📖 [**LAB_MANUAL.md**](LAB_MANUAL.md): Comprehensive university laboratory manual (Aim, Theory, Step-by-Step Procedure, Expected Output, and Troubleshooting).
-- 💡 [**VIVA_QUESTIONS.md**](VIVA_QUESTIONS.md): Top 25 high-frequency Viva Voce questions with detailed technical answers on Docker and Kubernetes.
-- 📝 [**PROJECT_REPORT.md**](PROJECT_REPORT.md): Ready-to-submit formal Academic Project Report.
+This is an educational lab, not a production commerce platform. It has no authentication, real payments or transactional inventory reservation. Quantities are checked against seeded stock, but checkout does not decrement stock. Order history is shared. Production would need per-user authorization, HTTPS, a migration system, stronger secret management, monitoring and database backups/replication.
 
----
+The inspector does not have Kubernetes API credentials. It cannot report replica counts or CPU metrics. Obtain those using `kubectl get pods,hpa` and `kubectl top pods`.
 
-## Project Structure
+HPA requires a working Metrics Server and sustained CPU load. The demo load endpoint is enabled only in the supplied isolated Docker/Kubernetes lab configuration and disabled in local mode. Disable `ENABLE_LOAD_DEMO` before exposing the application beyond a trusted lab.
 
-```text
-microservices-project/
-├── .github/
-│   └── workflows/
-│       └── build.yml               # Automated CI/CD Workflow (Build -> GHCR -> K8s)
-├── frontend-service/               # Showcase Web Interface & Reverse Proxy
-│   ├── Dockerfile                  # Lightweight Nginx container
-│   ├── nginx.conf                  # Reverse proxy config (/api/* -> cluster services)
-│   └── public/
-│       ├── index.html              # Professional UI dashboard
-│       ├── style.css               # Clean, responsive styling
-│       ├── app.js                  # Request/Response execution logic
-│       ├── privacy.html            # Privacy Policy
-│       ├── terms.html              # Terms and Conditions
-│       └── favicon.svg             # Vector favicon
-├── k8s/
-│   ├── frontend-service-deployment.yaml # Frontend Pod deployment (2 replicas)
-│   ├── frontend-service-service.yaml    # NodePort 30080 exposure
-│   ├── user-service-deployment.yaml     # User service replicas & probes
-│   ├── user-service-service.yaml        # User service ClusterIP/NodePort exposure
-│   ├── product-service-deployment.yaml  # Product service replicas & probes
-│   ├── product-service-service.yaml     # Product service ClusterIP/NodePort exposure
-│   ├── ingress.yaml                     # Ingress routing rules
-│   └── hpa.yaml                         # Horizontal Pod Autoscaling policies
-├── scripts/
-│   ├── deploy.ps1                  # 1-Click deployment script (PowerShell)
-│   ├── deploy.sh                   # 1-Click deployment script (Bash)
-│   ├── cleanup.ps1                 # Teardown script (PowerShell)
-│   ├── cleanup.sh                  # Teardown script (Bash)
-│   └── test-traffic.ps1            # HPA load generator & stress testing tool
-├── user-service/
-│   ├── Dockerfile                  # Multi-stage Docker build (Maven + JRE 25)
-│   ├── pom.xml                     # Spring Boot, WebMVC, and Actuator dependencies
-│   └── src/                        # User Service source code & health probes
-├── product-service/
-│   ├── Dockerfile                  # Multi-stage Docker build (Maven + JRE 25)
-│   ├── pom.xml                     # Spring Boot, WebMVC, and Actuator dependencies
-│   └── src/                        # Product Service source code & health probes
-├── vercel.json                     # Vercel deployment configuration
-├── index.html                      # Root web entrypoint for Vercel
-├── privacy.html                    # Root privacy policy
-├── terms.html                      # Root terms and conditions
-├── favicon.svg                     # Root favicon
-└── README.md
-```
+Keep the initial database password when reusing a volume. Changing an environment variable does not rotate an existing PostgreSQL user's password. Default cleanup retains data. `-DeleteData` or `--delete-data` deliberately removes it, subject to the storage class reclaim policy.
 
----
+## Verification commands
 
-## Quick Start: Automated Deployment
-
-### Option A: Using PowerShell (Windows)
 ```powershell
-.\scripts\deploy.ps1
+python -m pip install pytest
+python -m pytest -q
+python scripts/smoke-test.py http://localhost:5000
+kubectl kustomize k8s
+docker compose config --quiet
 ```
 
-### Option B: Using Bash (Linux/macOS)
-```bash
-chmod +x ./scripts/deploy.sh
-./scripts/deploy.sh
-```
+The smoke test places a disposable demonstration order. CI rehearses Kubernetes deployment on an ephemeral Kind cluster. No image publishing or deployment to a permanent remote cluster is configured.
 
----
+## Original repository
 
-## API & Interface Endpoints
+The supplied repository's original Spring Boot showcase is preserved in `legacy/`, including its deployment definitions. The active CloudMart code lives in `services/`, `k8s/`, and `scripts/`. The existing root static pages and Vercel configuration remain as the original web showcase; run CloudMart through the deployment instructions above. Do not apply the legacy manifests together with CloudMart. This deliverable is a local implementation based on the supplied repository. GitHub delivery uses the repository commit history. Container deployment remains a separate step.
 
-| Service | Method | Endpoint / Port | Description |
-| :--- | :--- | :--- | :--- |
-| **Web Dashboard** | GET | `http://localhost:30080` (NodePort) | Interactive Input & Output Console |
-| **User Service** | GET | `/api/users` (Port 8081) | Retrieve list of all users |
-| **User Service** | GET | `/api/health/users` | User Service Actuator health probe |
-| **Product Service** | GET | `/api/products` (Port 8082) | Retrieve list of all products |
-| **Product Service** | GET | `/api/health/products` | Product Service Actuator health probe |
+Original: https://github.com/g-vishnuvardhan/microservices-project
