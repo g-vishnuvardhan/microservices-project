@@ -2,6 +2,97 @@
 
 **Presenter: K. Rishi · Roll No: 24H51A05T6**
 
+## Local Kubernetes session (12 October 2026)
+
+CloudMart is deployed on the single-node `kind-cloudmart` context (Kubernetes
+1.36.1), inside Docker Desktop. Open **http://localhost:30080** for Kubernetes;
+port 5000 still serves the separate Compose stack. The two stacks have separate
+PostgreSQL data volumes and order histories.
+
+Metrics Server 0.9.0 is installed. Kubelet serving certificate bootstrap is
+enabled, the node's serving CSR was checked against its identity and internal
+IP before approval, and Metrics Server trusts the cluster CA using
+`--kubelet-certificate-authority=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt`.
+TLS verification remains enabled. Future serving-certificate renewals also need
+verified CSR approval in this local Kind setup.
+
+Run these commands in PowerShell from the checkout:
+
+```powershell
+Set-Location E:\sir\microservices-project
+kubectl config use-context kind-cloudmart
+kubectl get pods,svc,pvc,hpa -n microservices-lab
+kubectl top pods -n microservices-lab
+```
+
+For self-healing, watch pods in one terminal (`Ctrl+C` stops the watch):
+
+```powershell
+kubectl get pods -n microservices-lab -l app=frontend-service -w
+```
+
+In another terminal, delete one frontend pod and wait for readiness:
+
+```powershell
+$demoPod = kubectl get pods -n microservices-lab -l app=frontend-service -o jsonpath='{.items[0].metadata.name}'
+kubectl delete pod $demoPod -n microservices-lab
+kubectl wait --for=condition=Ready pod -l app=frontend-service -n microservices-lab --timeout=120s
+kubectl get pods -n microservices-lab -l app=frontend-service
+Invoke-RestMethod http://127.0.0.1:30080/healthz
+```
+
+Expected: the old pod disappears, a new pod name becomes `1/1 Running`, and two
+frontend replicas are available. The recorded test replaced a pod in 10.7
+seconds; all 39 sampled HTTP health requests returned 200.
+
+For autoscaling, watch HPA in one terminal:
+
+```powershell
+kubectl get hpa -n microservices-lab -w
+```
+
+In PowerShell 7 in another terminal:
+
+```powershell
+.\scripts\test-traffic.ps1 -BaseUrl http://127.0.0.1:30080 -Seconds 120 -Concurrency 16
+kubectl get deployments -n microservices-lab
+kubectl top pods -n microservices-lab
+kubectl describe hpa order-service -n microservices-lab
+```
+
+Expected: sustained order-service CPU above the 50% target increases its replica
+count from 2 toward the maximum of 5. The frontend may remain at 2 because the
+CPU work runs in the order service. The traffic stops automatically; allow the
+120-second scale-down stabilization window plus metric/controller delays before
+expecting 2 replicas again. These commands demonstrate pod scaling on one local
+node, not node autoscaling or recovery from a whole-node failure.
+
+The recorded 120-second, 16-worker test completed 2,315 successful requests with
+zero failures. Kubernetes HPA events confirmed order replicas increased from
+2 to 4 to 5, and frontend replicas increased from 2 to 3. Both deployments had
+all requested replicas ready. HPA CPU percentages are relative to the 50m CPU
+request per pod; utilization above 100% is valid and does not mean the whole
+machine's CPU was exhausted.
+
+After traffic stopped, both services automatically returned to 2 replicas in
+approximately 2.5 minutes, including the stabilization window and controller
+delays. The final application health check passed.
+
+References: [Kind configuration](https://kind.sigs.k8s.io/docs/user/configuration/),
+[Metrics Server](https://github.com/kubernetes-sigs/metrics-server), and
+[Kubernetes HPA behavior](https://kubernetes.io/docs/concepts/workloads/autoscaling/horizontal-pod-autoscale/).
+
+`scripts/kind-config.yaml` preserves the cluster's loopback NodePort mapping and
+kubelet serving-certificate bootstrap setting. Kind 0.33.0 is installed at
+`$env:LOCALAPPDATA\CloudMart\tools\kind.exe`. When rebuilding local images, Docker
+Desktop's image store may require exporting only the node platform before loading:
+
+```powershell
+$archive = Join-Path $env:TEMP 'cloudmart-images-amd64.tar'
+docker image save --platform linux/amd64 -o $archive cloudmart-frontend:v1 cloudmart-product:v1 cloudmart-order:v1 postgres:16-alpine
+& "$env:LOCALAPPDATA\CloudMart\tools\kind.exe" load image-archive $archive --name cloudmart
+```
+
 ## Before the presentation
 
 1. Copy the project to the college computer. Connect to the internet for the first image build or Python dependency installation. Fonts have local fallbacks, so the UI remains readable offline.
